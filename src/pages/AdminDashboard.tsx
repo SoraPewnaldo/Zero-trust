@@ -10,15 +10,22 @@ export default function AdminDashboard() {
   const [filterUser, setFilterUser] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterDecision, setFilterDecision] = useState('');
+  const [filterResource, setFilterResource] = useState('');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [threats, setThreats] = useState<ScanResult[]>([]);
   const [activeTab, setActiveTab] = useState<'logs' | 'users' | 'analytics'>('logs');
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     const [logData, orgStats, userData, threatData] = await Promise.all([
-      getLogs({ username: filterUser || undefined, role: filterRole || undefined, decision: filterDecision || undefined }),
+      getLogs({
+        username: filterUser || undefined,
+        role: filterRole || undefined,
+        decision: filterDecision || undefined,
+        resource: filterResource || undefined,
+      }),
       getOrgStats(),
       getUsers(),
       getThreats(),
@@ -30,7 +37,7 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [filterUser, filterRole, filterDecision]);
+  useEffect(() => { fetchData(); }, [filterUser, filterRole, filterDecision, filterResource]);
 
   const decisionStyle = (d: string) => {
     if (d === 'Allow') return 'text-white bg-white/10';
@@ -42,6 +49,12 @@ export default function AdminDashboard() {
     if (s === 'active') return 'text-white bg-white/10';
     if (s === 'pending') return 'text-white/70 bg-white/5';
     return 'text-white/50 bg-white/5 line-through';
+  };
+
+  const factorStatusStyle = (s: string) => {
+    if (s === 'pass') return 'text-white bg-white/10';
+    if (s === 'warn') return 'text-white/70 bg-white/[0.08]';
+    return 'text-white/50 bg-white/5';
   };
 
   // Chart data
@@ -137,12 +150,24 @@ export default function AdminDashboard() {
               <div key={t.id} className="flex items-center gap-4 p-3 border border-white/10">
                 <XCircle size={14} className="text-white/50 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 text-xs font-mono">
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                     <span className="text-white/80">{t.username.toUpperCase()}</span>
                     <span className="text-white/30">•</span>
                     <span className="text-white/50">{t.deviceId}</span>
                     <span className="text-white/30">•</span>
                     <span className="text-white/50">SCORE: {t.trustScore}</span>
+                    {t.resource && (
+                      <>
+                        <span className="text-white/30">•</span>
+                        <span className="text-white/50">{t.resource.toUpperCase()}</span>
+                      </>
+                    )}
+                    {t.context && (
+                      <>
+                        <span className="text-white/30">•</span>
+                        <span className="text-white/40">{t.context.networkType}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${decisionStyle(t.decision)}`}>
@@ -219,6 +244,19 @@ export default function AdminDashboard() {
                   <option value="Blocked">BLOCKED</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-[10px] font-mono text-white/40 mb-1 tracking-wider">RESOURCE</label>
+                <select
+                  value={filterResource}
+                  onChange={e => setFilterResource(e.target.value)}
+                  className="w-full bg-black border border-white/20 text-white font-mono text-xs px-3 py-2 focus:outline-none focus:border-white/50"
+                >
+                  <option value="">ALL</option>
+                  <option value="Internal Dashboard">INTERNAL DASHBOARD</option>
+                  <option value="Git Repository">GIT REPOSITORY</option>
+                  <option value="Production Console">PRODUCTION CONSOLE</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -242,26 +280,63 @@ export default function AdminDashboard() {
                     <tr className="border-b border-white/20">
                       <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">TIMESTAMP</th>
                       <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">USER</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">ROLE</th>
+                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">RESOURCE</th>
                       <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DEVICE</th>
+                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">CONTEXT</th>
                       <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">SCORE</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DECISION</th>
+                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DECISION</th>
+                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DETAILS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map(entry => (
-                      <tr key={entry.id} className="border-b border-white/5">
-                        <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
-                        <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.username}</td>
-                        <td className="text-xs font-mono text-white/50 py-2 pr-4 uppercase">{entry.role}</td>
-                        <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.deviceId}</td>
-                        <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
-                        <td className="py-2">
-                          <span className={`px-2 py-0.5 text-[10px] font-mono border border-white/15 ${decisionStyle(entry.decision)}`}>
-                            {entry.decision.toUpperCase()}
-                          </span>
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={entry.id} className="border-b border-white/5">
+                          <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
+                          <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.username}</td>
+                          <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource ?? '—'}</td>
+                          <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.deviceId}</td>
+                          <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">
+                            {entry.context ? `${entry.context.deviceType} / ${entry.context.networkType}` : '—'}
+                          </td>
+                          <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
+                          <td className="py-2 pr-4">
+                            <span className={`px-2 py-0.5 text-[10px] font-mono border border-white/15 ${decisionStyle(entry.decision)}`}>
+                              {entry.decision.toUpperCase()}
+                              {entry.mfaVerified && ' ✓'}
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            {entry.factors && entry.factors.length > 0 && (
+                              <button
+                                onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
+                                className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors"
+                              >
+                                {expandedLog === entry.id ? 'HIDE' : 'FACTORS'}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {expandedLog === entry.id && entry.factors && (
+                          <tr key={`${entry.id}-factors`}>
+                            <td colSpan={8} className="py-2 px-4">
+                              <div className="border border-white/10 p-3 space-y-1.5">
+                                {entry.factors.map((f, idx) => (
+                                  <div key={idx} className="flex items-center gap-3 text-[10px] font-mono">
+                                    <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+                                    <span className="text-white/70 w-36">{f.name}</span>
+                                    <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
+                                    <span className="text-white/40 flex-1">{f.detail}</span>
+                                    <span className={`${f.impact >= 0 ? 'text-white/60' : 'text-white/40'}`}>
+                                      {f.impact >= 0 ? '+' : ''}{f.impact}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
                   </tbody>
                 </table>
