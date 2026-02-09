@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getLogs, getOrgStats, getUsers, getThreats, getUserDetail, ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
+import { getLogs, getOrgStats, getThreats, getUserDetail as getMockUserDetail, ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
+import { api } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock } from 'lucide-react';
+import EmployeeForm from '@/components/admin/EmployeeForm';
+import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock, Plus, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function AdminDashboard() {
@@ -18,6 +20,7 @@ export default function AdminDashboard() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [showAddEmployee, setShowAddEmployee] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -28,13 +31,14 @@ export default function AdminDashboard() {
         decision: filterDecision || undefined,
         resource: filterResource || undefined,
       }),
+      // Prioritize real API for users, fallback to mock for others if needed
       getOrgStats(),
-      getUsers(),
+      api.admin.getUsers().catch(() => []), // Use real API
       getThreats(),
     ]);
     setLogs(logData);
     setStats(orgStats);
-    setUsers(userData);
+    setUsers(userData.users || userData); // Handle if API returns { users: [] } or just []
     setThreats(threatData);
     setLoading(false);
   };
@@ -43,9 +47,64 @@ export default function AdminDashboard() {
 
   const handleViewUser = async (userId: string) => {
     setLoadingUser(true);
-    const detail = await getUserDetail(userId);
-    setSelectedUser(detail);
+    try {
+      // Try real API first
+      const data = await api.admin.getUserDetail(userId);
+
+      // Map API response to UserDetail interface
+      const userDetail: UserDetail = {
+        userId: data.user._id,
+        username: data.user.username,
+        role: data.user.role,
+        status: data.user.status,
+        email: data.user.email,
+        department: data.user.department,
+        stats: {
+          totalScans: data.stats.totalScans,
+          avgScore: data.stats.avgTrustScore,
+          allowCount: data.stats.allowedScans,
+          mfaCount: data.stats.mfaCount,
+          blockedCount: data.stats.blockedScans,
+          lastDecision: data.stats.lastDecision
+        },
+        deviceInfo: data.devices[0] ? {
+          os: data.devices[0].platform || 'Unknown',
+          browser: data.devices[0].browser || 'Unknown',
+          ip: data.devices[0].ipAddress || 'Unknown',
+          location: 'Unknown', // Backend doesn't have location yet
+          lastSeen: data.devices[0].lastSeenAt
+        } : {
+          os: 'Unknown',
+          browser: 'Unknown',
+          ip: 'Unknown',
+          location: 'Unknown',
+          lastSeen: new Date().toISOString()
+        },
+        recommendations: data.recommendations,
+        logs: data.scans
+      };
+
+      setSelectedUser(userDetail);
+    } catch (e) {
+      console.warn('Failed to get user detail from real API, falling back to mock', e);
+      // Fallback or error handling
+      const detail = await getMockUserDetail(userId);
+      setSelectedUser(detail);
+    }
     setLoadingUser(false);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to fire/delete this employee? This action cannot be undone.')) return;
+
+    try {
+      await api.admin.deleteUser(userId);
+      // Refresh list
+      fetchData();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user');
+    }
   };
 
   const decisionStyle = (d: string) => {
@@ -195,11 +254,10 @@ export default function AdminDashboard() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-[10px] font-mono tracking-wider transition-all duration-200 border-b-2 ${
-              activeTab === tab
-                ? 'text-white border-white'
-                : 'text-white/40 border-transparent hover:text-white/60'
-            }`}
+            className={`px-4 py-2 text-[10px] font-mono tracking-wider transition-all duration-200 border-b-2 ${activeTab === tab
+              ? 'text-white border-white'
+              : 'text-white/40 border-transparent hover:text-white/60'
+              }`}
           >
             {tab.toUpperCase()}
           </button>
@@ -362,7 +420,15 @@ export default function AdminDashboard() {
             <div className="w-6 h-px bg-white/40"></div>
             <span className="text-[10px] font-mono text-white/50 tracking-wider">USER MANAGEMENT</span>
             <div className="flex-1 h-px bg-white/10"></div>
+            <span className="text-[10px] font-mono text-white/50 tracking-wider">USER MANAGEMENT</span>
+            <div className="flex-1 h-px bg-white/10"></div>
             <span className="text-[10px] font-mono text-white/30">{users.length} USERS</span>
+            <button
+              onClick={() => setShowAddEmployee(true)}
+              className="ml-4 px-3 py-1.5 bg-white text-black text-[10px] font-mono font-bold flex items-center gap-2 hover:bg-white/90 transition-colors"
+            >
+              <Plus size={12} /> ADD EMPLOYEE
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -403,10 +469,16 @@ export default function AdminDashboard() {
                     <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">{u.lastScan ? new Date(u.lastScan).toLocaleString() : '—'}</td>
                     <td className="py-2">
                       <button
-                        onClick={() => handleViewUser(u.userId)}
+                        onClick={() => handleViewUser(u.userId || (u as any)._id)}
                         className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors hover:border-white/40"
                       >
                         VIEW
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(u.userId || (u as any)._id)} // Handle both id formats if mixed
+                        className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-2 py-0.5 transition-colors hover:border-red-500/40 ml-2 flex items-center gap-1"
+                      >
+                        <Trash2 size={10} /> FIRE
                       </button>
                     </td>
                   </tr>
@@ -518,11 +590,10 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-mono text-white/80">{rec.title}</span>
-                        <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${
-                          rec.priority === 'high' ? 'text-white bg-white/15' :
+                        <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${rec.priority === 'high' ? 'text-white bg-white/15' :
                           rec.priority === 'medium' ? 'text-white/70 bg-white/[0.08]' :
-                          'text-white/50 bg-white/5'
-                        }`}>{rec.priority.toUpperCase()}</span>
+                            'text-white/50 bg-white/5'
+                          }`}>{rec.priority.toUpperCase()}</span>
                       </div>
                       <div className="text-[10px] font-mono text-white/40">{rec.description}</div>
                     </div>
@@ -713,6 +784,15 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+      {showAddEmployee && (
+        <EmployeeForm
+          onClose={() => setShowAddEmployee(false)}
+          onSuccess={() => {
+            fetchData();
+          }}
+          api={api}
+        />
       )}
     </DashboardLayout>
   );

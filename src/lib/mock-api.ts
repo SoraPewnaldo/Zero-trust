@@ -511,6 +511,8 @@ export interface UserDetail {
   userId: string;
   username: string;
   role: string;
+  email?: string;
+  department?: string;
   status: 'active' | 'blocked' | 'pending';
   stats: DashboardStats;
   deviceInfo: DeviceInfo;
