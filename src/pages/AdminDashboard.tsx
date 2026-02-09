@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getLogs, ScanResult } from '@/lib/mock-api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { GlowBox } from '@/components/ui/glow-box';
 
 export default function AdminDashboard() {
   const [logs, setLogs] = useState<ScanResult[]>([]);
@@ -32,8 +31,7 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout title="ADMIN DASHBOARD" subtitle="ORGANIZATION ACCESS LOGS">
       {/* Filters */}
-      <GlowBox className="mb-6">
-      <div className="border border-white/20 p-4 lg:p-6 rounded-[inherit]">
+      <div className="border border-white/20 p-4 lg:p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-px bg-white/40"></div>
           <span className="text-[10px] font-mono text-white/50 tracking-wider">FILTERS</span>
@@ -78,11 +76,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      </GlowBox>
 
       {/* Logs Table */}
-      <GlowBox>
-      <div className="border border-white/20 p-4 lg:p-6 rounded-[inherit]">
+      <div className="border border-white/20 p-4 lg:p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-px bg-white/40"></div>
           <span className="text-[10px] font-mono text-white/50 tracking-wider">ACCESS LOGS</span>
@@ -127,7 +123,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-      </GlowBox>
     </DashboardLayout>
   );
 }
