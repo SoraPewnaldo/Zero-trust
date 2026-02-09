@@ -5,6 +5,5 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function DashboardRedirect() {
   const { user, isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   return <Navigate to="/verify" replace />;
 }
