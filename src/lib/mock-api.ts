@@ -486,3 +486,43 @@ export async function getThreats(): Promise<ScanResult[]> {
   await new Promise(r => setTimeout(r, 300));
   return scanLogs.filter(l => l.decision === 'Blocked' || l.trustScore < 30).slice(0, 10);
 }
+
+/** GET /users/:id — full employee detail with all their logs, device info, recommendations */
+export interface UserDetail {
+  userId: string;
+  username: string;
+  role: string;
+  status: 'active' | 'blocked' | 'pending';
+  stats: DashboardStats;
+  deviceInfo: DeviceInfo;
+  logs: ScanResult[];
+  recommendations: SecurityRecommendation[];
+}
+
+export async function getUserDetail(userId: string): Promise<UserDetail | null> {
+  await new Promise(r => setTimeout(r, 400));
+  const userLogs = scanLogs.filter(l => l.userId === userId).sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+  if (userLogs.length === 0) return null;
+  const latest = userLogs[0];
+  const totalScans = userLogs.length;
+  const avgScore = Math.round(userLogs.reduce((s, l) => s + l.trustScore, 0) / totalScans);
+  return {
+    userId,
+    username: latest.username,
+    role: latest.role,
+    status: latest.decision === 'Blocked' ? 'blocked' : avgScore >= 40 ? 'active' : 'pending',
+    stats: {
+      totalScans,
+      avgScore,
+      lastDecision: latest.decision,
+      allowCount: userLogs.filter(l => l.decision === 'Allow').length,
+      mfaCount: userLogs.filter(l => l.decision === 'MFA Required').length,
+      blockedCount: userLogs.filter(l => l.decision === 'Blocked').length,
+    },
+    deviceInfo: latest.deviceInfo ?? generateDeviceInfo(),
+    logs: userLogs,
+    recommendations: getRecommendations(latest.trustScore, latest.factors),
+  };
+}

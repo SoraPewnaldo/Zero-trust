@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import DashboardRedirect from "./pages/DashboardRedirect";
+import EmployeeVerify from "./pages/EmployeeVerify";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -25,6 +26,11 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<DashboardRedirect />} />
+            <Route path="/verify" element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeVerify />
+              </ProtectedRoute>
+            } />
             <Route path="/employee" element={
               <ProtectedRoute requiredRole="employee">
                 <EmployeeDashboard />
