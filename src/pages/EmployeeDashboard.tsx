@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { postScan, getUserLogs, ScanResult } from '@/lib/mock-api';
 import DashboardLayout from '@/components/DashboardLayout';
+import { GlowBox } from '@/components/ui/glow-box';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -38,7 +39,8 @@ export default function EmployeeDashboard() {
   return (
     <DashboardLayout title="EMPLOYEE DASHBOARD" subtitle="DEVICE TRUST VERIFICATION">
       {/* Scan Section */}
-      <div className="border border-white/20 p-4 lg:p-6 mb-6">
+      <GlowBox className="mb-6">
+      <div className="border border-white/20 p-4 lg:p-6 rounded-[inherit]">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-px bg-white/40"></div>
           <span className="text-[10px] font-mono text-white/50 tracking-wider">DEVICE SCAN</span>
@@ -87,9 +89,11 @@ export default function EmployeeDashboard() {
           </div>
         )}
       </div>
+      </GlowBox>
 
       {/* Scan History */}
-      <div className="border border-white/20 p-4 lg:p-6">
+      <GlowBox>
+      <div className="border border-white/20 p-4 lg:p-6 rounded-[inherit]">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-px bg-white/40"></div>
           <span className="text-[10px] font-mono text-white/50 tracking-wider">SCAN HISTORY</span>
@@ -129,6 +133,7 @@ export default function EmployeeDashboard() {
           </div>
         )}
       </div>
+      </GlowBox>
     </DashboardLayout>
   );
 }
