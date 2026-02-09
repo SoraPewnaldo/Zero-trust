@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getLogs, getOrgStats, getUsers, getThreats, ScanResult, DashboardStats, UserSummary } from '@/lib/mock-api';
+import { getLogs, getOrgStats, getUsers, getThreats, getUserDetail, ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function AdminDashboard() {
@@ -16,6 +16,8 @@ export default function AdminDashboard() {
   const [threats, setThreats] = useState<ScanResult[]>([]);
   const [activeTab, setActiveTab] = useState<'logs' | 'users' | 'analytics'>('logs');
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
+  const [loadingUser, setLoadingUser] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,6 +40,13 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => { fetchData(); }, [filterUser, filterRole, filterDecision, filterResource]);
+
+  const handleViewUser = async (userId: string) => {
+    setLoadingUser(true);
+    const detail = await getUserDetail(userId);
+    setSelectedUser(detail);
+    setLoadingUser(false);
+  };
 
   const decisionStyle = (d: string) => {
     if (d === 'Allow') return 'text-white bg-white/10';
@@ -346,8 +355,8 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* Users Tab */}
-      {activeTab === 'users' && (
+      {/* Users Tab - List */}
+      {activeTab === 'users' && !selectedUser && (
         <div className="border border-white/20 p-4 lg:p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-6 h-px bg-white/40"></div>
@@ -367,7 +376,8 @@ export default function AdminDashboard() {
                   <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">AVG SCORE</th>
                   <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">LAST SCORE</th>
                   <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">LAST DECISION</th>
-                  <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">LAST SCAN</th>
+                  <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">LAST SCAN</th>
+                  <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -390,11 +400,210 @@ export default function AdminDashboard() {
                         </span>
                       ) : <span className="text-xs font-mono text-white/30">—</span>}
                     </td>
-                    <td className="text-xs font-mono text-white/40 py-2 whitespace-nowrap">{u.lastScan ? new Date(u.lastScan).toLocaleString() : '—'}</td>
+                    <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">{u.lastScan ? new Date(u.lastScan).toLocaleString() : '—'}</td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => handleViewUser(u.userId)}
+                        className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors hover:border-white/40"
+                      >
+                        VIEW
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* User Detail View */}
+      {activeTab === 'users' && selectedUser && (
+        <div>
+          <button
+            onClick={() => setSelectedUser(null)}
+            className="flex items-center gap-2 text-[10px] font-mono text-white/50 hover:text-white/80 mb-4 transition-colors"
+          >
+            <ArrowLeft size={12} /> BACK TO USERS
+          </button>
+
+          <div className="border border-white/20 p-4 lg:p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-px bg-white/40"></div>
+              <span className="text-[10px] font-mono text-white/50 tracking-wider">EMPLOYEE DETAIL</span>
+              <div className="flex-1 h-px bg-white/10"></div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 mb-4">
+              <div>
+                <div className="text-[10px] font-mono text-white/40">USERNAME</div>
+                <div className="text-lg font-mono text-white font-bold">{selectedUser.username.toUpperCase()}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-white/40">ROLE</div>
+                <div className="text-sm font-mono text-white/70 uppercase">{selectedUser.role}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-white/40">STATUS</div>
+                <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${statusStyle(selectedUser.status)}`}>
+                  {selectedUser.status.toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <div className="text-[10px] font-mono text-white/40">USER ID</div>
+                <div className="text-xs font-mono text-white/50">{selectedUser.userId}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+              {[
+                { label: 'TOTAL SCANS', value: selectedUser.stats.totalScans },
+                { label: 'AVG SCORE', value: selectedUser.stats.avgScore },
+                { label: 'ALLOWED', value: selectedUser.stats.allowCount },
+                { label: 'MFA REQ', value: selectedUser.stats.mfaCount },
+                { label: 'BLOCKED', value: selectedUser.stats.blockedCount },
+              ].map(s => (
+                <div key={s.label} className="border border-white/10 p-3">
+                  <div className="text-[9px] font-mono text-white/40">{s.label}</div>
+                  <div className="text-lg font-mono text-white font-bold">{s.value}</div>
+                </div>
+              ))}
+              <div className="border border-white/10 p-3">
+                <div className="text-[9px] font-mono text-white/40">LAST DECISION</div>
+                <div className="text-xs font-mono text-white/70">{selectedUser.stats.lastDecision ?? '—'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="border border-white/20 p-4 lg:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-px bg-white/40"></div>
+                <span className="text-[10px] font-mono text-white/50 tracking-wider">LAST DEVICE INFO</span>
+                <div className="flex-1 h-px bg-white/10"></div>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { icon: <Cpu size={14} className="text-white/40" />, label: 'OS', value: selectedUser.deviceInfo.os },
+                  { icon: <Monitor size={14} className="text-white/40" />, label: 'BROWSER', value: selectedUser.deviceInfo.browser },
+                  { icon: <Globe size={14} className="text-white/40" />, label: 'IP ADDRESS', value: selectedUser.deviceInfo.ip },
+                  { icon: <Globe size={14} className="text-white/40" />, label: 'LOCATION', value: selectedUser.deviceInfo.location },
+                  { icon: <Clock size={14} className="text-white/40" />, label: 'LAST SEEN', value: new Date(selectedUser.deviceInfo.lastSeen).toLocaleString() },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-3">
+                    {item.icon}
+                    <div>
+                      <div className="text-[10px] font-mono text-white/40">{item.label}</div>
+                      <div className="text-xs font-mono text-white/80">{item.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 border border-white/20 p-4 lg:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-px bg-white/40"></div>
+                <span className="text-[10px] font-mono text-white/50 tracking-wider">SECURITY RECOMMENDATIONS</span>
+                <div className="flex-1 h-px bg-white/10"></div>
+              </div>
+              <div className="space-y-2">
+                {selectedUser.recommendations.map(rec => (
+                  <div key={rec.id} className="flex items-start gap-3 p-3 border border-white/10">
+                    {rec.resolved ? (
+                      <CheckCircle size={14} className="text-white/60 mt-0.5 shrink-0" />
+                    ) : (
+                      <AlertTriangle size={14} className="text-white/60 mt-0.5 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-mono text-white/80">{rec.title}</span>
+                        <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${
+                          rec.priority === 'high' ? 'text-white bg-white/15' :
+                          rec.priority === 'medium' ? 'text-white/70 bg-white/[0.08]' :
+                          'text-white/50 bg-white/5'
+                        }`}>{rec.priority.toUpperCase()}</span>
+                      </div>
+                      <div className="text-[10px] font-mono text-white/40">{rec.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-white/20 p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-px bg-white/40"></div>
+              <span className="text-[10px] font-mono text-white/50 tracking-wider">SCAN HISTORY</span>
+              <div className="flex-1 h-px bg-white/10"></div>
+              <span className="text-[10px] font-mono text-white/30">{selectedUser.logs.length} RECORDS</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">TIMESTAMP</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">RESOURCE</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DEVICE</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">CONTEXT</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">SCORE</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DECISION</th>
+                    <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DETAILS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedUser.logs.map(entry => (
+                    <>
+                      <tr key={entry.id} className="border-b border-white/5">
+                        <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
+                        <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource ?? '—'}</td>
+                        <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.deviceId}</td>
+                        <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">
+                          {entry.context ? `${entry.context.deviceType} / ${entry.context.networkType}` : '—'}
+                        </td>
+                        <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`px-2 py-0.5 text-[10px] font-mono border border-white/15 ${decisionStyle(entry.decision)}`}>
+                            {entry.decision.toUpperCase()}
+                            {entry.mfaVerified && ' ✓'}
+                          </span>
+                        </td>
+                        <td className="py-2">
+                          {entry.factors && entry.factors.length > 0 && (
+                            <button
+                              onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
+                              className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors"
+                            >
+                              {expandedLog === entry.id ? 'HIDE' : 'FACTORS'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {expandedLog === entry.id && entry.factors && (
+                        <tr key={`${entry.id}-factors`}>
+                          <td colSpan={7} className="py-2 px-4">
+                            <div className="border border-white/10 p-3 space-y-1.5">
+                              {entry.factors.map((f, idx) => (
+                                <div key={idx} className="flex items-center gap-3 text-[10px] font-mono">
+                                  <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+                                  <span className="text-white/70 w-36">{f.name}</span>
+                                  <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
+                                  <span className="text-white/40 flex-1">{f.detail}</span>
+                                  <span className={`${f.impact >= 0 ? 'text-white/60' : 'text-white/40'}`}>
+                                    {f.impact >= 0 ? '+' : ''}{f.impact}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
