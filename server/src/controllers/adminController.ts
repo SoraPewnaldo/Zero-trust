@@ -220,3 +220,122 @@ export const getUserDetail = async (req: AuthRequest, res: Response): Promise<vo
         res.status(500).json({ error: 'Failed to get user detail' });
     }
 };
+
+/**
+ * Create a new user (employee or admin)
+ */
+export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const {
+            username,
+            email,
+            password,
+            role,
+            firstName,
+            lastName,
+            department,
+            status = 'active'
+        } = req.body;
+
+        // Validation
+        if (!username || !email || !password || !role) {
+            res.status(400).json({ error: 'Missing required fields: username, email, password, role' });
+            return;
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({
+            $or: [{ username }, { email }]
+        });
+
+        if (existingUser) {
+            res.status(409).json({ error: 'User with this username or email already exists' });
+            return;
+        }
+
+        // Hash password
+        // Note: In a real app we would import bcrypt, but since it's already used in initDb.ts 
+        // we can dynamically import it or assume it's available via a helper service.
+        // For consistency with existing codebase, let's use dynamic import or replicate the hash logic if needed.
+        // Actually, let's rely on importing bcryptjs at the top of the file since it is used in initDb.ts
+        // Wait, I need to check if bcryptjs is imported in this file. It is NOT.
+        // I will add the import in a separate edit or just use dynamic import here for now to avoid multiple edits.
+        // Better: I'll use a dynamic import for now to keep this single-step safely, or better yet, I will add the import in a previous step?
+        // No, I can add the import in this same file if I replace the whole file or a larger chunk.
+        // Alternatively, I will just add the function and then add the import at the top.
+        // Let's assume I will add `import bcrypt from 'bcryptjs';` at the top in a separate call or use a multi-replace.
+        // For now, I'll use dynamic import to be safe and self-contained in this block if possible, 
+        // but Typescript might complain about types.
+        // Let's just do the function logic and I'll add the import in a subsequent call.
+
+        // Actually, I'll use a hack or just assume I'll fix imports. 
+        // Let's do the right thing: I should have checked imports. 
+        // I'll add the implementation here and then fix the import.
+
+        // Dynamic import workaround to ensure it works without top-level import for now
+        const bcrypt = await import('bcryptjs');
+        const passwordHash = await bcrypt.default.hash(password, 10);
+
+        const newUser = await User.create({
+            username,
+            email,
+            passwordHash,
+            role,
+            firstName,
+            lastName,
+            department,
+            status,
+            mfaEnabled: false
+        });
+
+        // Return user without sensitive data
+        const userResponse = newUser.toObject();
+        // @ts-ignore
+        delete userResponse.passwordHash;
+        // @ts-ignore
+        delete userResponse.mfaSecret;
+
+        res.status(201).json({
+            message: 'User created successfully',
+            user: userResponse
+        });
+
+    } catch (error) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Failed to create user' });
+    }
+};
+
+/**
+ * Delete a user
+ */
+export const deleteUser = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+        const requestorId = req.user!.id;
+
+        // Prevent self-deletion
+        if (userId === requestorId) {
+            res.status(403).json({ error: 'Cannot delete your own account' });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        // Delete user
+        await User.findByIdAndDelete(userId);
+
+        // Optionally clean up related data like scans and devices
+        // await ScanResult.deleteMany({ userId });
+        // await Device.deleteMany({ userId });
+
+        res.json({ message: `User ${user.username} deleted successfully` });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ error: 'Failed to delete user' });
+    }
+};

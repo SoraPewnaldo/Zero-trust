@@ -21,4 +21,10 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
+*.sln
 *.sw?
+
+# Backend Data
+mongo-data/
+.env
+server/.env
