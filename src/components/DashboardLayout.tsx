@@ -26,7 +26,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
               className="font-mono text-white text-xl lg:text-2xl font-bold tracking-widest italic transform -skew-x-12 cursor-pointer"
               onClick={() => navigate('/')}
             >
-              UIMIX
+              Sora IAM
             </div>
             <div className="h-3 lg:h-4 w-px bg-white/40"></div>
             <span className="text-white/60 text-[8px] lg:text-[10px] font-mono">ZERO.TRUST</span>
