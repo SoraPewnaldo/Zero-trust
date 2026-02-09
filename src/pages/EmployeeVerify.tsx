@@ -75,7 +75,7 @@ export default function EmployeeVerify() {
         {isAllowed && (
           <div className="text-center mb-6">
             <button
-              onClick={() => navigate('/employee')}
+              onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/employee')}
               className="relative px-8 py-3 bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 group"
             >
               <span className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
