@@ -6,5 +6,5 @@ export default function DashboardRedirect() {
   const { user, isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role === 'admin') return <Navigate to="/admin" replace />;
-  return <Navigate to="/employee" replace />;
+  return <Navigate to="/verify" replace />;
 }
