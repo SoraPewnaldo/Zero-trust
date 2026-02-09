@@ -190,6 +190,9 @@ export const getUserDetail = async (req: AuthRequest, res: Response): Promise<vo
                     allowedScans: {
                         $sum: { $cond: [{ $eq: ['$decision', 'allow'] }, 1, 0] },
                     },
+                    mfaRequiredScans: {
+                        $sum: { $cond: [{ $eq: ['$decision', 'mfa_required'] }, 1, 0] },
+                    },
                     blockedScans: {
                         $sum: { $cond: [{ $eq: ['$decision', 'blocked'] }, 1, 0] },
                     },
@@ -201,8 +204,51 @@ export const getUserDetail = async (req: AuthRequest, res: Response): Promise<vo
             totalScans: 0,
             avgTrustScore: 0,
             allowedScans: 0,
+            mfaRequiredScans: 0,
             blockedScans: 0,
         };
+
+        const lastScan = await ScanResult.findOne({ userId }).sort({ createdAt: -1 });
+
+        // Generate recommendations
+        const recommendations = [];
+        if (!user.mfaEnabled) {
+            recommendations.push({
+                id: 'rec-1',
+                title: 'Enable MFA',
+                priority: 'high',
+                description: 'User has not enabled Multi-Factor Authentication.',
+                resolved: false
+            });
+        }
+        if (userStats.avgTrustScore > 0 && userStats.avgTrustScore < 60) {
+            recommendations.push({
+                id: 'rec-2',
+                title: 'Low Trust Score',
+                priority: 'medium',
+                description: 'User average trust score is below 60. Investigate activity.',
+                resolved: false
+            });
+        }
+        if (userStats.blockedScans > 5) {
+            recommendations.push({
+                id: 'rec-3',
+                title: 'High Block Rate',
+                priority: 'high',
+                description: 'User has a high number of blocked access attempts.',
+                resolved: false
+            });
+        }
+        if (devices.length === 0) {
+            recommendations.push({
+                id: 'rec-4',
+                title: 'No Devices',
+                priority: 'low',
+                description: 'User has no registered devices.',
+                resolved: true // Considered resolved if we just want to note it, or false if it's an issue.
+            });
+        }
+
 
         res.json({
             user,
@@ -212,8 +258,11 @@ export const getUserDetail = async (req: AuthRequest, res: Response): Promise<vo
                 totalScans: userStats.totalScans,
                 avgTrustScore: Math.round(userStats.avgTrustScore || 0),
                 allowedScans: userStats.allowedScans,
+                mfaCount: userStats.mfaRequiredScans,
                 blockedScans: userStats.blockedScans,
+                lastDecision: lastScan ? lastScan.decision : null,
             },
+            recommendations
         });
     } catch (error) {
         console.error('Get user detail error:', error);
