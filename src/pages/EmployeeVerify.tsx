@@ -2,15 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  postScan, verifyMfa,
-  ScanResult, ResourceType, AccessContext, DeviceType, NetworkType,
+  postScan, verifyMfa, detectContext,
+  ScanResult, ResourceType, AccessContext,
 } from '@/lib/mock-api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Shield, Monitor, Lock, Laptop, Wifi, Key, CheckCircle } from 'lucide-react';
+import { Shield, Monitor, Lock, Key, CheckCircle, Laptop, Wifi } from 'lucide-react';
 
 const RESOURCES: ResourceType[] = ['Internal Dashboard', 'Git Repository', 'Production Console'];
-const DEVICE_TYPES: DeviceType[] = ['Managed', 'Personal'];
-const NETWORK_TYPES: NetworkType[] = ['Corporate', 'Home', 'Public Wi-Fi'];
 
 export default function EmployeeVerify() {
   const { user } = useAuth();
@@ -18,15 +16,15 @@ export default function EmployeeVerify() {
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [detectedContext, setDetectedContext] = useState<AccessContext | null>(null);
 
   const [selectedResource, setSelectedResource] = useState<ResourceType>('Internal Dashboard');
-  const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType>('Managed');
-  const [selectedNetworkType, setSelectedNetworkType] = useState<NetworkType>('Corporate');
 
   const handleScan = async () => {
     if (!user) return;
     setScanning(true);
-    const context: AccessContext = { deviceType: selectedDeviceType, networkType: selectedNetworkType };
+    const context = detectContext();
+    setDetectedContext(context);
     const result = await postScan(user.id, user.username, user.role, selectedResource, context);
     setScanResult(result);
     setScanning(false);
@@ -117,49 +115,25 @@ export default function EmployeeVerify() {
               </div>
             </div>
 
-            {/* Context Selection */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
-              <div>
-                <label className="block text-[10px] font-mono text-white/40 mb-1.5 tracking-wider">
-                  <Laptop size={10} className="inline mr-1 -mt-0.5" /> DEVICE TYPE
-                </label>
-                <div className="flex gap-2">
-                  {DEVICE_TYPES.map(d => (
-                    <button
-                      key={d}
-                      onClick={() => setSelectedDeviceType(d)}
-                      className={`flex-1 px-3 py-1.5 text-[10px] font-mono border transition-all duration-200 ${
-                        selectedDeviceType === d
-                          ? 'border-white text-white bg-white/10'
-                          : 'border-white/20 text-white/40 hover:text-white/60 hover:border-white/40'
-                      }`}
-                    >
-                      {d.toUpperCase()}
-                    </button>
-                  ))}
+            {/* Auto-detected Context Display */}
+            {detectedContext && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
+                <div className="border border-white/10 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Laptop size={10} className="text-white/40" />
+                    <span className="text-[10px] font-mono text-white/40 tracking-wider">DEVICE TYPE (AUTO-DETECTED)</span>
+                  </div>
+                  <span className="text-xs font-mono text-white/80">{detectedContext.deviceType.toUpperCase()}</span>
+                </div>
+                <div className="border border-white/10 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wifi size={10} className="text-white/40" />
+                    <span className="text-[10px] font-mono text-white/40 tracking-wider">NETWORK TYPE (AUTO-DETECTED)</span>
+                  </div>
+                  <span className="text-xs font-mono text-white/80">{detectedContext.networkType.toUpperCase()}</span>
                 </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-mono text-white/40 mb-1.5 tracking-wider">
-                  <Wifi size={10} className="inline mr-1 -mt-0.5" /> NETWORK TYPE
-                </label>
-                <div className="flex gap-2">
-                  {NETWORK_TYPES.map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setSelectedNetworkType(n)}
-                      className={`flex-1 px-3 py-1.5 text-[10px] font-mono border transition-all duration-200 ${
-                        selectedNetworkType === n
-                          ? 'border-white text-white bg-white/10'
-                          : 'border-white/20 text-white/40 hover:text-white/60 hover:border-white/40'
-                      }`}
-                    >
-                      {n.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
 
             <button
               onClick={handleScan}

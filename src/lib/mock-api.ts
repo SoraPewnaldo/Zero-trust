@@ -372,6 +372,25 @@ export async function getDeviceInfo(): Promise<DeviceInfo> {
   return generateDeviceInfo();
 }
 
+/** Auto-detect device and network context (simulated) */
+export function detectContext(): AccessContext {
+  // Simulate detection based on browser/environment heuristics
+  const ua = navigator.userAgent.toLowerCase();
+  const isManagedHint = ua.includes('windows') || ua.includes('mac');
+  const deviceType: DeviceType = isManagedHint && Math.random() > 0.3 ? 'Managed' : 'Personal';
+
+  // Simulate network detection
+  const conn = (navigator as any).connection;
+  let networkType: NetworkType = 'Corporate';
+  if (conn?.type === 'wifi' || conn?.effectiveType) {
+    networkType = Math.random() > 0.5 ? 'Home' : 'Public Wi-Fi';
+  } else {
+    networkType = Math.random() > 0.4 ? 'Corporate' : Math.random() > 0.5 ? 'Home' : 'Public Wi-Fi';
+  }
+
+  return { deviceType, networkType };
+}
+
 /** GET /stats for a specific user */
 export async function getUserStats(userId: string): Promise<DashboardStats> {
   await new Promise(r => setTimeout(r, 300));
