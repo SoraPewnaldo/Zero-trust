@@ -27,7 +27,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<DashboardRedirect />} />
             <Route path="/verify" element={
-              <ProtectedRoute requiredRole="employee">
+              <ProtectedRoute>
                 <EmployeeVerify />
               </ProtectedRoute>
             } />
