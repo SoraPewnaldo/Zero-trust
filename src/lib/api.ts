@@ -131,6 +131,14 @@ export const api = {
             const response = await apiClient.get(`/admin/users/${userId}`);
             return response.data;
         },
+        createUser: async (userData: any) => {
+            const response = await apiClient.post('/admin/users', userData);
+            return response.data;
+        },
+        deleteUser: async (userId: string) => {
+            const response = await apiClient.delete(`/admin/users/${userId}`);
+            return response.data;
+        },
     },
 };
 
