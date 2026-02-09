@@ -39,7 +39,7 @@ export default function Login() {
         <div className="container mx-auto px-4 lg:px-8 py-3 lg:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 lg:gap-4">
             <div className="font-mono text-white text-xl lg:text-2xl font-bold tracking-widest italic transform -skew-x-12">
-              Sora IAM
+              SoraIAM
             </div>
             <div className="h-3 lg:h-4 w-px bg-white/40"></div>
             <span className="text-white/60 text-[8px] lg:text-[10px] font-mono">ZERO.TRUST</span>
