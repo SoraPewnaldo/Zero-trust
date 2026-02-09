@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { GlowBox } from '@/components/ui/glow-box';
 
 export default function Login() {
   const { login } = useAuth();
@@ -52,7 +53,8 @@ export default function Login() {
 
       {/* Login Form */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
-        <div className="w-full max-w-sm">
+        <GlowBox className="w-full max-w-sm">
+        <div className="border border-white/10 p-6 rounded-[inherit]">
           {/* Top decorative line */}
           <div className="flex items-center gap-2 mb-4 opacity-60">
             <div className="w-8 h-px bg-white"></div>
@@ -122,6 +124,7 @@ export default function Login() {
             <span className="text-white text-[9px] font-mono">AUTH.PROTOCOL.V1</span>
           </div>
         </div>
+        </GlowBox>
       </div>
 
       <style>{`
