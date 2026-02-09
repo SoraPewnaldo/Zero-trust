@@ -1,0 +1,50 @@
+name: Docker Image Scan
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  scan-images:
+    name: Scan Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build backend image
+        run: docker build -t soraiam-backend:scan ./server
+      
+      - name: Build frontend image
+        run: docker build -t soraiam-frontend:scan .
+      
+      - name: Run Trivy scan on backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'soraiam-backend:scan'
+          format: 'sarif'
+          output: 'trivy-backend-image.sarif'
+      
+      - name: Run Trivy scan on frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'soraiam-frontend:scan'
+          format: 'sarif'
+          output: 'trivy-frontend-image.sarif'
+      
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: '.'
+      
+      - name: Run Snyk scan
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: soraiam-backend:scan
+          args: --severity-threshold=high
