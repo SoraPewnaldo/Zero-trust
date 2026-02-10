@@ -117,29 +117,33 @@ jobs:
       name: production
       # url: ${{ steps.deploy.outputs.url }} # deploy step output not yet available here without id
     
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Copy files to server
-        if: secrets.DEPLOY_HOST != ''
+        if: env.DEPLOY_HOST != ''
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_SSH_KEY }}
           source: "docker-compose.prod.yml,nginx.conf"
           target: "/opt/soraiam"
 
       - name: Deploy to server via SSH
-        if: secrets.DEPLOY_HOST != ''
+        if: env.DEPLOY_HOST != ''
         uses: appleboy/ssh-action@v1.0.0
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/soraiam
             docker compose -f docker-compose.prod.yml pull
@@ -149,10 +153,8 @@ jobs:
       
       - name: Health check
         if: env.DEPLOY_HOST != ''
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           sleep 30
-          curl -f ${{ secrets.DEPLOY_URL }}/health || exit 1
+          curl -f ${{ env.DEPLOY_URL }}/health || exit 1
       
 
