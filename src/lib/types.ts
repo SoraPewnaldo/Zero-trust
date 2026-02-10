@@ -25,15 +25,15 @@ export interface DeviceInfo {
 
 export interface ScanResult {
     id: string;
-    userId: string | any;
+    userId: string;
     username: string;
     role: string;
-    deviceId: string | any;
+    deviceId: string;
     trustScore: number;
     decision: string;
     timestamp: string;
     deviceInfo?: DeviceInfo;
-    resource?: string | any;
+    resource?: string;
     context?: AccessContext;
     factors?: DecisionFactor[];
     mfaVerified?: boolean;

@@ -14,7 +14,7 @@ export default function EmployeeDashboard() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
-  const [resources, setResources] = useState<any[]>([]);
+  const [resources, setResources] = useState<{ _id: string; name: string }[]>([]);
   const [selectedResourceId, setSelectedResourceId] = useState<string>('');
 
   const loadData = useCallback(async () => {
@@ -28,11 +28,20 @@ export default function EmployeeDashboard() {
         api.resources.getAll()
       ]);
 
-      const historyData = historyResponse.scans.map((s: any) => ({
+      const historyData = historyResponse.scans.map((s: {
+        _id: string;
+        decision: string;
+        resourceId?: { name: string };
+        deviceId?: { deviceName: string };
+        trustScore: number;
+        createdAt: string;
+        timestamp: string;
+      }) => ({
         ...s,
         id: s._id,
         resource: s.resourceId?.name || 'Authentication',
-        deviceId: s.deviceId?.deviceName || 'Web Session'
+        deviceId: s.deviceId?.deviceName || 'Web Session',
+        timestamp: s.createdAt || s.timestamp
       }));
 
       setHistory(historyData);
@@ -98,7 +107,7 @@ export default function EmployeeDashboard() {
 
     setVerifying(true);
     try {
-      await api.verification.verifyMFA((latestScan as any).scanId || latestScan.id, mfaCode);
+      await api.verification.verifyMFA(latestScan.id, mfaCode);
       await loadData();
     } catch (error) {
       console.error('MFA verification failed', error);

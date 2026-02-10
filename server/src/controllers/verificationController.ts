@@ -7,6 +7,7 @@ import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
+import { IDecisionFactor } from '../models/ScanResult.js';
 
 // --- GATEKEEPER DECISION LOGIC (NODE.JS) ---
 // EXACT implementation of User's requested logic
@@ -87,8 +88,8 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
 
         // --- CALL PYTHON TRUST ENGINE (PDP) ---
         let trustScore = 0;
-        let factors: any[] = [];
-        let engineDetails: any = {};
+        const factors: IDecisionFactor[] = [];
+        let engineDetails: Record<string, unknown> = {};
 
         try {
             console.log('🔄 Calling Python Trust Engine (PDP)...');
@@ -156,8 +157,9 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
         }
 
         // Save scanned OS info if available from Engine
-        if (engineDetails.os_version) {
-            device.osVersion = engineDetails.os_version;
+        const engineDetailsObj = engineDetails as Record<string, unknown>;
+        if (typeof engineDetailsObj.os_version === 'string') {
+            device.osVersion = engineDetailsObj.os_version;
             await device.save();
         }
 

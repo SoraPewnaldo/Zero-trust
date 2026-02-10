@@ -4,7 +4,11 @@ import { X, Save, Key, Mail, User, Briefcase, Shield } from 'lucide-react';
 interface EmployeeFormProps {
     onClose: () => void;
     onSuccess: () => void;
-    api: any; // Using the api client
+    api: {
+        admin: {
+            createUser: (data: unknown) => Promise<unknown>;
+        };
+    };
 }
 
 export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormProps) {
@@ -56,9 +60,10 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
 
             onSuccess();
             onClose();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to create user:', err);
-            setError(err.response?.data?.error || 'Failed to create user. Please try again.');
+            const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to create user. Please try again.';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }

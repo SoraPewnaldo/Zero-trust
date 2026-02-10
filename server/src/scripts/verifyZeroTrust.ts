@@ -15,8 +15,8 @@ async function verifyZeroTrust() {
             console.log('✅ Python PDP is ONLINE');
             console.log(`   - Score: ${pdpRes.data.trust_score}`);
             console.log(`   - OS Version: ${pdpRes.data.details.os_version}`);
-        } catch (e: any) {
-            console.error('❌ Python PDP is OFFLINE or Erroring:', e.message);
+        } catch (e: unknown) {
+            console.error('❌ Python PDP is OFFLINE or Erroring:', (e as Error).message);
             process.exit(1);
         }
 
@@ -41,8 +41,8 @@ async function verifyZeroTrust() {
             process.exit(1);
         }
 
-        const prodResource = resources.find((r: any) => r.name === 'Production Cloud Console');
-        const repoResource = resources.find((r: any) => r.name === 'Git Repository');
+        const prodResource = resources.find((r: { name: string }) => r.name === 'Production Cloud Console');
+        const repoResource = resources.find((r: { name: string }) => r.name === 'Git Repository');
 
         if (!prodResource) console.warn('⚠️  Production Console resource not found');
 
@@ -61,17 +61,18 @@ async function verifyZeroTrust() {
         console.log(`   - Trust Score: ${result.trustScore}`);
         console.log(`   - Decision: ${result.decision}`);
         console.log(`   - Reason: ${result.decisionReason}`);
-        console.log(`   - Engine Used: ${result.factors.some((f: any) => f.name === 'Trust Engine Offline') ? '❌ OFFLINE FALLBACK' : '✅ PYTHON ENGINE'}`);
+        console.log(`   - Engine Used: ${result.factors.some((f: { name: string }) => f.name === 'Trust Engine Offline') ? '❌ OFFLINE FALLBACK' : '✅ PYTHON ENGINE'}`);
 
-        if (result.factors.some((f: any) => f.name === 'Trust Engine Offline')) {
+        if (result.factors.some((f: { name: string }) => f.name === 'Trust Engine Offline')) {
             console.error('❌ PEP fell back to offline mode. Integration failed.');
             process.exit(1);
         }
 
         console.log('🎉 End-to-End Zero Trust Verification PASSED!');
 
-    } catch (error: any) {
-        console.error('❌ Verification failed:', error.response?.data || error.message);
+    } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string } }; message: string };
+        console.error('❌ Verification failed:', err.response?.data?.error || err.message);
         process.exit(1);
     }
 }
