@@ -9,6 +9,8 @@ jobs:
   scan-images:
     name: Scan Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     
     steps:
       - name: Checkout code
@@ -34,11 +36,19 @@ jobs:
           format: 'sarif'
           output: 'trivy-frontend-image.sarif'
       
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Trivy backend results
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: '.'
+          sarif_file: 'trivy-backend-image.sarif'
+          category: backend
+      
+      - name: Upload Trivy frontend results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend-image.sarif'
+          category: frontend
       
       - name: Run Snyk scan
         uses: snyk/actions/docker@master
