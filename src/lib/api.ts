@@ -134,7 +134,7 @@ export const api = {
             const response = await apiClient.get(`/admin/users/${userId}`);
             return response.data;
         },
-        createUser: async (userData: any) => {
+        createUser: async (userData: unknown) => {
             const response = await apiClient.post('/admin/users', userData);
             return response.data;
         },

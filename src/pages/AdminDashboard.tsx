@@ -40,24 +40,45 @@ export default function AdminDashboard() {
       const usersList = usersResponse?.users || [];
 
       // Map backend logs to frontend ScanResult interface
-      const realLogs: ScanResult[] = logsResponse.scans.map((scan: any) => ({
+      const realLogs: ScanResult[] = logsResponse.scans.map((scan: {
+        _id: string;
+        userId?: { _id: string; username: string; role: string } | string;
+        username?: string;
+        role?: string;
+        deviceId?: { deviceName: string } | string;
+        trustScore: number;
+        decision: string;
+        createdAt: string;
+        timestamp: string;
+        context: {
+          ipAddress?: string;
+          geolocation?: { city?: string };
+          deviceType: string;
+          networkType: string;
+        };
+        factors: Array<{ details?: string; detail?: string }>;
+        mfaVerified: boolean;
+        resourceId?: { name: string };
+        resource?: string;
+      }) => ({
         id: scan._id,
-        userId: scan.userId?._id || scan.userId?.toString() || 'unknown',
-        username: scan.userId?.username || scan.username || 'Unknown',
-        role: scan.userId?.role || scan.role || 'unknown',
-        deviceId: scan.deviceId?.deviceName || scan.deviceId?.toString() || 'Unknown',
+        userId: (typeof scan.userId === 'object' && scan.userId ? scan.userId._id : scan.userId?.toString()) || 'unknown',
+        username: (typeof scan.userId === 'object' && scan.userId ? scan.userId.username : scan.username) || 'Unknown',
+        role: (typeof scan.userId === 'object' && scan.userId ? scan.userId.role : scan.role) || 'unknown',
+        deviceId: (typeof scan.deviceId === 'object' && scan.deviceId ? scan.deviceId.deviceName : scan.deviceId?.toString()) || 'Unknown',
         trustScore: scan.trustScore,
         decision: scan.decision,
         timestamp: scan.createdAt || scan.timestamp,
         deviceInfo: {
-          ...scan.context,
+          os: 'Unknown', // Map if available
+          browser: 'Unknown', // Map if available
           ip: scan.context?.ipAddress || 'Unknown',
           location: scan.context?.geolocation?.city || 'Unknown',
           lastSeen: scan.createdAt
         },
         resource: scan.resourceId?.name || scan.resource || 'Unknown',
         context: scan.context,
-        factors: (scan.factors || []).map((f: any) => ({
+        factors: (scan.factors || []).map((f) => ({
           ...f,
           detail: f.details || f.detail
         })),
@@ -85,7 +106,13 @@ export default function AdminDashboard() {
 
       // Map users (handled by existing logic mostly, but ensured)
       // The users state expects UserSummary[], api.admin.getUsers returns { users: [...] }
-      const realUsers = (usersList.users || []).map((u: any) => ({
+      const realUsers = (usersList.users || []).map((u: {
+        _id: string;
+        username: string;
+        role: string;
+        lastLoginAt: string;
+        status: 'active' | 'blocked' | 'pending';
+      }) => ({
         userId: u._id,
         username: u.username,
         role: u.role,
@@ -113,7 +140,10 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [filterUser, filterRole, filterDecision, filterResource]);
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterUser, filterRole, filterDecision, filterResource]);
 
   const handleViewUser = async (userId: string) => {
     setLoadingUser(true);
@@ -151,9 +181,11 @@ export default function AdminDashboard() {
           lastSeen: new Date().toISOString()
         },
         recommendations: data.recommendations,
-        logs: data.scans.map((scan: any) => ({
+        logs: data.scans.map((scan: {
+          factors?: Array<{ details?: string; detail?: string }>;
+        }) => ({
           ...scan,
-          factors: (scan.factors || []).map((f: any) => ({
+          factors: (scan.factors || []).map((f) => ({
             ...f,
             detail: f.details || f.detail
           }))
@@ -552,13 +584,13 @@ export default function AdminDashboard() {
                     <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">{u.lastScan ? new Date(u.lastScan).toLocaleString() : '—'}</td>
                     <td className="py-2">
                       <button
-                        onClick={() => handleViewUser(u.userId || (u as any)._id)}
+                        onClick={() => handleViewUser(u.userId)}
                         className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors hover:border-white/40"
                       >
                         VIEW
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(u.userId || (u as any)._id)} // Handle both id formats if mixed
+                        onClick={() => handleDeleteUser(u.userId)}
                         className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-2 py-0.5 transition-colors hover:border-red-500/40 ml-2 flex items-center gap-1"
                       >
                         <Trash2 size={10} /> FIRE

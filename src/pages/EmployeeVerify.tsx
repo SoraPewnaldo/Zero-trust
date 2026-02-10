@@ -17,7 +17,15 @@ export default function EmployeeVerify() {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [scanResult, setScanResult] = useState<any | null>(null);
+  const [scanResult, setScanResult] = useState<{
+    scanId: string;
+    trustScore: number;
+    decision: string;
+    mfaVerified: boolean;
+    resource?: { name: string };
+    factors: Array<{ name: string; status: string }>;
+    accessGranted?: boolean;
+  } | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
   const [selectedResourceId, setSelectedResourceId] = useState<string>('');
 
@@ -136,8 +144,8 @@ export default function EmployeeVerify() {
                     key={r._id}
                     onClick={() => setSelectedResourceId(r._id)}
                     className={`px-3 py-1.5 text-[10px] font-mono border transition-all duration-200 ${selectedResourceId === r._id
-                        ? 'border-white text-white bg-white/20'
-                        : 'border-white/10 text-white/40 hover:text-white/60 hover:border-white/40'
+                      ? 'border-white text-white bg-white/20'
+                      : 'border-white/10 text-white/40 hover:text-white/60 hover:border-white/40'
                       }`}
                   >
                     {r.name.toUpperCase()}
@@ -212,7 +220,7 @@ export default function EmployeeVerify() {
             {scanResult.factors && scanResult.factors.length > 0 && (
               <div className="space-y-1.5 mt-4">
                 <div className="text-[9px] font-mono text-white/30 tracking-widest mb-2">DECISION FACTORS</div>
-                {scanResult.factors.map((factor: any, idx: number) => (
+                {scanResult.factors.map((factor, idx) => (
                   <div key={idx} className="flex items-center gap-3 p-2 border border-white/5 bg-white/[0.02]">
                     <div className={`w-1.5 h-1.5 shrink-0 ${factor.status === 'pass' ? 'bg-green-500' : factor.status === 'warn' ? 'bg-yellow-500' : factor.status === 'fail' ? 'bg-red-500' : 'bg-white/20'}`}></div>
                     <span className="text-[10px] font-mono text-white/70 flex-1">{factor.name}</span>

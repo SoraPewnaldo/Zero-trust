@@ -18,14 +18,14 @@ export interface IAuditLog extends Document {
     };
     action: string;
     result: 'success' | 'failure';
-    details?: any;
+    details?: Record<string, unknown>;
     context: {
         deviceId?: mongoose.Types.ObjectId;
         sessionId?: string;
         scanId?: string;
         ipAddress?: string;
         userAgent?: string;
-        geolocation?: any;
+        geolocation?: Record<string, unknown>;
     };
     timestamp: Date;
     createdAt: Date;

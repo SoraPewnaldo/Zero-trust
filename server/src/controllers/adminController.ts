@@ -1,10 +1,12 @@
 import { Response } from 'express';
+import { FilterQuery } from 'mongoose';
 import { AuthRequest } from '../middleware/auth.js';
-import { ScanResult } from '../models/ScanResult.js';
+import { IScanResult, ScanResult } from '../models/ScanResult.js';
 import { User } from '../models/User.js';
 import { Device } from '../models/Device.js';
 import { Resource } from '../models/Resource.js';
-import { AuditLog } from '../models/AuditLog.js';
+import { AuditLog, IAuditLog } from '../models/AuditLog.js';
+import { IDecisionFactor } from '../models/ScanResult.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -109,9 +111,9 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         } = req.query;
 
         // 1. Build ScanResult Filter
-        const scanFilter: any = {};
+        const scanFilter: FilterQuery<IScanResult> = {};
         if (decision) scanFilter.decision = (decision as string).toLowerCase();
-        if (userId) scanFilter.userId = userId;
+        if (userId) scanFilter.userId = userId as string;
 
         // If username is provided but not userId, we need to find matching user IDs
         if (username && !userId) {
@@ -138,7 +140,7 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         }
 
         // 2. Build AuditLog Filter
-        const auditFilter: any = {
+        const auditFilter: FilterQuery<IAuditLog> = {
             // We exclude access_attempt because it duplicates ScanResult
             eventType: { $in: ['login_failed', 'login_success', 'logout', 'user_created', 'user_deleted', 'mfa_verified'] }
         };
@@ -192,17 +194,17 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         if (scans.length > 0) {
             console.log('DEBUG: Scans content detail:', JSON.stringify(scans.map(s => ({
                 id: s._id,
-                user: (s.userId as any)?.username || s.userId,
+                user: (s.userId as unknown as { username: string }).username || (s.userId as unknown as string),
                 score: s.trustScore,
                 decision: s.decision,
-                resource: (s.resourceId as any)?.name
+                resource: (s.resourceId as unknown as { name: string }).name
             }))));
         }
 
         // 4. Map AuditLog entries to ScanResult shape
         const mappedAuditLogs = await Promise.all(auditLogs.map(async (log) => {
             let logDecision = log.result === 'success' ? 'allow' : 'blocked';
-            let factors: any[] = [];
+            let factors: IDecisionFactor[] = [];
             let resourceName = 'System';
 
             // Try to find a real trust score for this user if it's a login event
@@ -225,39 +227,39 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
                 }
 
                 if (latestScan) {
-                    trustScore = (latestScan as any).trustScore;
+                    trustScore = (latestScan as unknown as IScanResult).trustScore;
                     // If the latest scan was blocked, we should reflect that in the log decision too
-                    if ((latestScan as any).decision === 'blocked') logDecision = 'blocked';
+                    if ((latestScan as unknown as IScanResult).decision === 'blocked') logDecision = 'blocked';
                 }
             }
 
             switch (log.eventType) {
                 case 'login_success':
                     resourceName = 'Authentication';
-                    factors = [{ name: 'Login Success', status: trustScore >= 60 ? 'pass' : 'fail', details: 'User authenticated successfully' }];
+                    factors = [{ name: 'Login Success', category: 'user', status: trustScore >= 60 ? 'pass' : 'fail', score: trustScore >= 60 ? 100 : 0, weight: 100, impact: 100, details: 'User authenticated successfully' }];
                     break;
                 case 'login_failed':
                     logDecision = 'blocked';
                     resourceName = 'Authentication';
-                    factors = [{ name: 'Authentication Failed', status: 'fail', details: log.details?.reason || 'Invalid credentials' }];
+                    factors = [{ name: 'Authentication Failed', category: 'user', status: 'fail', score: 0, weight: 100, impact: 100, details: (log.details as { reason?: string })?.reason || 'Invalid credentials' }];
                     break;
                 case 'logout':
                     resourceName = 'Authentication';
-                    factors = [{ name: 'Logout', status: 'pass', details: 'User logged out' }];
+                    factors = [{ name: 'Logout', category: 'user', status: 'pass', score: 100, weight: 100, impact: 100, details: 'User logged out' }];
                     break;
                 case 'mfa_verified':
                     resourceName = 'Authentication';
-                    factors = [{ name: 'MFA Verified', status: 'pass', details: 'Step-up authentication successful' }];
+                    factors = [{ name: 'MFA Verified', category: 'user', status: 'pass', score: 100, weight: 100, impact: 100, details: 'Step-up authentication successful' }];
                     break;
                 case 'user_created':
                     logDecision = 'allow';
                     resourceName = 'User Management';
-                    factors = [{ name: 'User Created', status: 'pass', details: `Created user ${log.target?.name}` }];
+                    factors = [{ name: 'User Created', category: 'user', status: 'pass', score: 100, weight: 100, impact: 100, details: `Created user ${log.target?.name}` }];
                     break;
                 case 'user_deleted':
                     logDecision = 'allow';
                     resourceName = 'User Management';
-                    factors = [{ name: 'User Deleted', status: 'pass', details: `Deleted user ${log.target?.name}` }];
+                    factors = [{ name: 'User Deleted', category: 'user', status: 'pass', score: 100, weight: 100, impact: 100, details: `Deleted user ${log.target?.name}` }];
                     break;
             }
 
@@ -298,7 +300,7 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         console.log('DEBUG: Mapped Audit scores:', mappedAuditLogs.map(a => a.trustScore));
 
         // 5. Merge and sort
-        const combinedLogs = [...scans, ...mappedAuditLogs].sort((a: any, b: any) =>
+        const combinedLogs = [...scans, ...mappedAuditLogs].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         ).slice(0, Number(limit));
 
@@ -519,10 +521,8 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         });
 
         // Return user without sensitive data
-        const userResponse = newUser.toObject();
-        // @ts-ignore
+        const userResponse = newUser.toObject() as unknown as Record<string, unknown>;
         delete userResponse.passwordHash;
-        // @ts-ignore
         delete userResponse.mfaSecret;
 
         // Log user creation

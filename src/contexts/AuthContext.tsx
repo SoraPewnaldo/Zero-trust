@@ -70,11 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return { success: false, error: 'AUTHENTICATION_FAILED' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
+      const errorMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'AUTHENTICATION_FAILED';
       return {
         success: false,
-        error: error.response?.data?.error || 'AUTHENTICATION_FAILED'
+        error: errorMsg
       };
     }
   }, []);

@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import UAParser from 'ua-parser-js';
 import crypto from 'crypto';
 
@@ -19,7 +20,7 @@ export class ContextDetectionService {
     /**
      * Detect context from request
      */
-    static detectContext(req: any): DetectedContext {
+    static detectContext(req: Request): DetectedContext {
         const userAgent = req.headers['user-agent'] || '';
         const ipAddress = this.getClientIp(req);
         const parser = new UAParser(userAgent);
@@ -55,11 +56,13 @@ export class ContextDetectionService {
     /**
      * Get client IP address
      */
-    private static getClientIp(req: any): string {
+    private static getClientIp(req: Request): string {
+        const forwarded = req.headers['x-forwarded-for'];
+        const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0];
+
         return (
-            req.headers['x-forwarded-for']?.split(',')[0] ||
-            req.headers['x-real-ip'] ||
-            req.connection?.remoteAddress ||
+            ip ||
+            req.headers['x-real-ip'] as string ||
             req.socket?.remoteAddress ||
             'unknown'
         );
