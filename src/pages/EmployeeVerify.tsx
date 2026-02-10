@@ -44,6 +44,10 @@ export default function EmployeeVerify() {
     fetchResources();
   }, []);
 
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+
   const handleScan = async () => {
     if (!user || !selectedResourceId) return;
     setScanning(true);
@@ -58,18 +62,25 @@ export default function EmployeeVerify() {
     }
   };
 
-  const handleMfaVerify = async () => {
-    if (!scanResult) return;
-    const mfaCode = prompt('Enter 6-digit MFA code (e.g. 123456):');
-    if (!mfaCode) return;
+  const handleMfaVerify = () => {
+    setMfaCode('');
+    setMfaError('');
+    setMfaModalOpen(true);
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scanResult || !mfaCode) return;
 
     setVerifying(true);
+    setMfaError('');
     try {
       const updated = await api.verification.verifyMFA(scanResult.scanId, mfaCode);
       setScanResult(updated);
+      setMfaModalOpen(false);
     } catch (error) {
       console.error('MFA verification failed', error);
-      alert('Invalid MFA code');
+      setMfaError('Invalid authentication code. Please try again.');
     } finally {
       setVerifying(false);
     }
@@ -234,6 +245,71 @@ export default function EmployeeVerify() {
           </div>
         )}
       </div>
+
+      {/* MFA Modal */}
+      {mfaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-black border border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.1)] relative">
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/50"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/50"></div>
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-white/50"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/50"></div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 border border-white/10 bg-white/5">
+                  <Key size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-mono font-bold text-white tracking-wider">STEP-UP AUTHENTICATION</h3>
+                  <p className="text-[10px] font-mono text-white/50">ENTER YOUR 6-DIGIT MFA TOKEN</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleMfaSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono text-white/40 block">AUTHENTICATOR CODE</label>
+                  <input
+                    type="text"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10"
+                    autoFocus
+                  />
+                  <p className="text-[9px] font-mono text-white/30 text-center pt-2">
+                    USE TEST CODE: <span className="text-white/60">123456</span>
+                  </p>
+                </div>
+
+                {mfaError && (
+                  <div className="flex items-center gap-2 text-red-400 bg-red-500/10 p-2 border border-red-500/20 justify-center">
+                    {/* Assuming AlertTriangle is imported, if not I might need to check imports */}
+                    <span className="text-[10px] font-mono">{mfaError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setMfaModalOpen(false)}
+                    className="py-3 border border-white/10 text-[10px] font-mono text-white/60 hover:bg-white/5 transition-colors"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={verifying || mfaCode.length !== 6}
+                    className="py-3 bg-white text-black text-[10px] font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {verifying ? 'VERIFYING...' : 'CONFIRM ACCESS'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

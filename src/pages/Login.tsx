@@ -14,19 +14,31 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await login(username, password);
-    setLoading(false);
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError('AUTHENTICATION_FAILED — INVALID CREDENTIALS');
+    try {
+      const result = await login(username, password);
+      setLoading(false);
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error || 'AUTHENTICATION_FAILED — INVALID CREDENTIALS');
+      }
+    } catch (err: unknown) {
+      setLoading(false);
+      console.error('Login submit error:', err);
+      setError(`CONNECTION_ERROR — ${(err as Error)?.message || 'UNKNOWN'}`);
     }
   };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
-      {/* Mobile stars background */}
-      <div className="absolute inset-0 w-full h-full stars-bg"></div>
+      {/* Twinkling stars background */}
+      <div className="absolute inset-0 w-full h-full">
+        <div className="absolute inset-0 stars-layer-1"></div>
+        <div className="absolute inset-0 stars-layer-2"></div>
+        <div className="absolute inset-0 stars-layer-3"></div>
+        <div className="absolute inset-0 login-grid-bg"></div>
+        <div className="absolute inset-0 login-glow"></div>
+      </div>
 
       {/* Corner Frame Accents */}
       <div className="absolute top-0 left-0 w-8 h-8 lg:w-12 lg:h-12 border-t-2 border-l-2 border-white/30 z-20"></div>
@@ -74,7 +86,7 @@ export default function Login() {
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-2.5 focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
+                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
                 placeholder="enter username"
                 required
               />
@@ -85,7 +97,7 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-2.5 focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
+                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
                 placeholder="enter password"
                 required
               />
@@ -100,7 +112,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full relative px-6 py-2.5 bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group"
+              className="w-full relative px-6 py-3 min-h-[44px] bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group"
             >
               <span className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
               <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -120,18 +132,67 @@ export default function Login() {
       </div>
 
       <style>{`
-        .stars-bg {
+        @keyframes twinkle1 {
+          0%, 100% { opacity: 0.9; }
+          50% { opacity: 0.3; }
+        }
+        @keyframes twinkle2 {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.9; }
+        }
+        @keyframes twinkle3 {
+          0%, 100% { opacity: 0.7; }
+          40% { opacity: 0.2; }
+          80% { opacity: 1; }
+        }
+        
+        .stars-layer-1 {
           background-image: 
-            radial-gradient(1px 1px at 20% 30%, white, transparent),
-            radial-gradient(1px 1px at 60% 70%, white, transparent),
-            radial-gradient(1px 1px at 50% 50%, white, transparent),
-            radial-gradient(1px 1px at 80% 10%, white, transparent),
-            radial-gradient(1px 1px at 90% 60%, white, transparent),
-            radial-gradient(1px 1px at 33% 80%, white, transparent),
-            radial-gradient(1px 1px at 15% 60%, white, transparent),
-            radial-gradient(1px 1px at 70% 40%, white, transparent);
-          background-size: 200% 200%, 180% 180%, 250% 250%, 220% 220%, 190% 190%, 240% 240%, 210% 210%, 230% 230%;
-          opacity: 0.3;
+            radial-gradient(1.5px 1.5px at 10% 15%, rgba(255,255,255,0.9), transparent),
+            radial-gradient(1px 1px at 35% 10%, rgba(255,255,255,0.7), transparent),
+            radial-gradient(1.5px 1.5px at 75% 25%, rgba(255,255,255,0.8), transparent),
+            radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1.5px 1.5px at 90% 45%, rgba(255,255,255,0.7), transparent),
+            radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 65% 90%, rgba(255,255,255,0.5), transparent);
+          background-size: 200px 200px, 300px 300px, 270px 270px, 190px 190px, 210px 210px, 230px 230px, 220px 220px;
+          animation: twinkle1 4s ease-in-out infinite;
+        }
+        
+        .stars-layer-2 {
+          background-image: 
+            radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 45% 65%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1.5px 1.5px at 5% 55%, rgba(255,255,255,0.7), transparent),
+            radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 40% 35%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1px 1px at 95% 85%, rgba(255,255,255,0.6), transparent);
+          background-size: 250px 250px, 180px 180px, 240px 240px, 280px 280px, 250px 250px, 260px 260px, 210px 210px;
+          animation: twinkle2 6s ease-in-out infinite;
+        }
+        
+        .stars-layer-3 {
+          background-image: 
+            radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1px 1px at 33% 80%, rgba(255,255,255,0.4), transparent),
+            radial-gradient(1px 1px at 15% 60%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1.5px 1.5px at 85% 75%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 55% 20%, rgba(255,255,255,0.5), transparent);
+          background-size: 220px 220px, 260px 260px, 200px 200px, 170px 170px, 190px 190px, 240px 240px;
+          animation: twinkle3 5s ease-in-out infinite;
+        }
+        
+        .login-grid-bg {
+          background-image:
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+          background-size: 60px 60px;
+        }
+        
+        .login-glow {
+          background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 60%);
         }
       `}</style>
     </main>

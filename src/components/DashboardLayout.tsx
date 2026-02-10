@@ -32,13 +32,13 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
             <span className="text-white/60 text-[8px] lg:text-[10px] font-mono">ZERO.TRUST</span>
           </div>
 
-          <div className="flex items-center gap-4 lg:gap-6">
-            <span className="text-[10px] font-mono text-white/50">
+          <div className="flex items-center gap-2 lg:gap-6">
+            <span className="text-[10px] font-mono text-white/50 truncate max-w-[120px] sm:max-w-none">
               {user?.username.toUpperCase()} [{user?.role.toUpperCase()}]
             </span>
             <button
               onClick={handleLogout}
-              className="px-3 py-1 text-[10px] font-mono text-white/60 border border-white/20 hover:bg-white hover:text-black transition-all duration-200"
+              className="px-3 py-1 text-[10px] font-mono text-white/60 border border-white/20 hover:bg-white hover:text-black transition-all duration-200 shrink-0"
             >
               LOGOUT
             </button>
@@ -47,7 +47,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
       </div>
 
       {/* Page Content */}
-      <div className="container mx-auto px-4 lg:px-8 py-6 lg:py-10">
+      <div className="container mx-auto px-4 lg:px-8 py-6 lg:py-10 pb-16">
         {/* Page Title */}
         <div className="mb-6 lg:mb-8">
           <div className="flex items-center gap-2 mb-3 opacity-60">
