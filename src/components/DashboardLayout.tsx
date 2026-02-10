@@ -17,7 +17,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
   };
 
   return (
-    <main className="relative min-h-screen bg-black">
+    <main className="relative min-h-screen">
       {/* Top Header */}
       <div className="border-b border-white/20">
         <div className="container mx-auto px-4 lg:px-8 py-3 lg:py-4 flex items-center justify-between">

@@ -15,12 +15,15 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+import { TwinklingStars } from "@/components/ui/TwinklingStars";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <TwinklingStars />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
