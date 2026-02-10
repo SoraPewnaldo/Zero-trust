@@ -1,23 +1,147 @@
-name: Deploy to Production
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
-    tags:
-      - 'v*'
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 
 env:
+  NODE_VERSION: '18'
+  MONGODB_VERSION: '7.0'
   REGISTRY: ghcr.io
   IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
   IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
   IMAGE_NAME_TRUST_ENGINE: ${{ github.repository }}/trust-engine
 
-
 jobs:
-  # Build and Push Docker Images
+  # ============================================
+  # STAGE 1: TESTING
+  # ============================================
+  
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+      
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: npm ci
+      
+      - name: Run backend linter
+        working-directory: ./server
+        run: npm run lint --if-present
+      
+      - name: Build backend
+        working-directory: ./server
+        run: npm run build
+      
+      - name: Run backend tests
+        working-directory: ./server
+        run: npm test --if-present
+        env:
+          MONGODB_URI: mongodb://localhost:27017/soraiam-test
+          JWT_SECRET: test-secret-key
+          NODE_ENV: test
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install frontend dependencies
+        run: npm ci
+      
+      - name: Run frontend linter
+        run: npm run lint
+      
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:3001/api
+      
+      - name: Run frontend tests
+        run: npm test --if-present
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner (Backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './server'
+          format: 'sarif'
+          output: 'trivy-backend-results.sarif'
+      
+      - name: Run Trivy vulnerability scanner (Frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-frontend-results.sarif'
+      
+      - name: Upload Trivy backend results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-backend-results.sarif'
+          category: backend
+      
+      - name: Upload Trivy frontend results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend-results.sarif'
+          category: frontend
+
+  # ============================================
+  # STAGE 2: BUILD & PUSH DOCKER IMAGES
+  # ============================================
+  
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -36,6 +160,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
+      # Backend Image
       - name: Extract metadata for backend
         id: meta-backend
         uses: docker/metadata-action@v5
@@ -43,7 +168,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
@@ -59,8 +183,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-
-      
+      # Trust Engine Image
       - name: Extract metadata for trust-engine
         id: meta-trust-engine
         uses: docker/metadata-action@v5
@@ -68,7 +191,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TRUST_ENGINE }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
@@ -83,7 +205,8 @@ jobs:
           labels: ${{ steps.meta-trust-engine.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
+      
+      # Frontend Image
       - name: Extract metadata for frontend
         id: meta-frontend
         uses: docker/metadata-action@v5
@@ -91,7 +214,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
@@ -107,7 +229,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Deploy to Production (Example with Docker Compose)
+  # ============================================
+  # STAGE 3: DEPLOY TO PRODUCTION
+  # ============================================
+  
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
@@ -115,7 +240,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: 
       name: production
-      # url: ${{ steps.deploy.outputs.url }} # deploy step output not yet available here without id
     
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -159,4 +283,7 @@ jobs:
           sleep 30
           curl -f ${{ env.DEPLOY_URL }}/health || exit 1
       
-
+      - name: Deployment successful
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "🚀 Application is live at ${{ env.DEPLOY_URL }}"
