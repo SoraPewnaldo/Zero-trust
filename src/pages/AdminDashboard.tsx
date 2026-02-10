@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getLogs, getOrgStats, getThreats, getUserDetail as getMockUserDetail, ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
+import { ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
 import { api } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import EmployeeForm from '@/components/admin/EmployeeForm';
@@ -24,23 +24,89 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [logData, orgStats, userData, threatData] = await Promise.all([
-      getLogs({
-        username: filterUser || undefined,
-        role: filterRole || undefined,
-        decision: filterDecision || undefined,
-        resource: filterResource || undefined,
-      }),
-      // Prioritize real API for users, fallback to mock for others if needed
-      getOrgStats(),
-      api.admin.getUsers().catch(() => []), // Use real API
-      getThreats(),
-    ]);
-    setLogs(logData);
-    setStats(orgStats);
-    setUsers(userData.users || userData); // Handle if API returns { users: [] } or just []
-    setThreats(threatData);
-    setLoading(false);
+    try {
+      const [logsResponse, statsResponse, userData, usersList] = await Promise.all([
+        api.admin.getScanLogs({ limit: 100 }), // Fetch recent logs
+        api.admin.getDashboardStats(),
+        api.admin.getUsers().catch(() => []),
+        api.admin.getUsers().catch(() => ({ users: [] }))
+      ]);
+
+      // Map backend logs to frontend ScanResult interface
+      const realLogs: ScanResult[] = logsResponse.scans.map((scan: any) => ({
+        id: scan._id,
+        userId: scan.userId?._id || scan.userId?.toString() || 'unknown',
+        username: scan.userId?.username || scan.username || 'Unknown',
+        role: scan.userId?.role || scan.role || 'unknown',
+        deviceId: scan.deviceId?.deviceName || scan.deviceId?.toString() || 'Unknown',
+        trustScore: scan.trustScore,
+        decision: scan.decision,
+        timestamp: scan.createdAt || scan.timestamp,
+        deviceInfo: {
+          ...scan.context,
+          ip: scan.context?.ipAddress || 'Unknown',
+          location: scan.context?.geolocation?.city || 'Unknown',
+          lastSeen: scan.createdAt
+        },
+        resource: scan.resourceId?.name || scan.resource || 'Unknown',
+        context: scan.context,
+        factors: (scan.factors || []).map((f: any) => ({
+          ...f,
+          detail: f.details || f.detail
+        })),
+        mfaVerified: scan.mfaVerified
+      }));
+
+      // Filter logs based on UI filters (client-side for now to match mock behavior)
+      let filteredLogs = realLogs;
+      if (filterUser) filteredLogs = filteredLogs.filter(l => l.username.toLowerCase().includes(filterUser.toLowerCase()));
+      if (filterRole) filteredLogs = filteredLogs.filter(l => l.role === filterRole);
+      if (filterDecision) filteredLogs = filteredLogs.filter(l => l.decision === filterDecision);
+      if (filterResource) filteredLogs = filteredLogs.filter(l => l.resource === filterResource);
+
+      setLogs(filteredLogs);
+
+      // Map backend stats to DashboardStats
+      setStats({
+        totalScans: statsResponse.totalScans,
+        avgScore: statsResponse.avgTrustScore,
+        lastDecision: null, // Not provided by stats endpoint
+        allowCount: statsResponse.allowedScans,
+        mfaCount: statsResponse.mfaRequiredScans,
+        blockedCount: statsResponse.blockedScans
+      });
+
+      // Map users (handled by existing logic mostly, but ensured)
+      // The users state expects UserSummary[], api.admin.getUsers returns { users: [...] }
+      const realUsers = (usersList.users || []).map((u: any) => ({
+        userId: u._id,
+        username: u.username,
+        role: u.role,
+        lastScan: u.lastLoginAt, // Approx
+        lastScore: 0, // Would need scan aggregation
+        lastDecision: null,
+        totalScans: 0, // Would need scan aggregation
+        avgScore: 0,
+        status: u.status
+      }));
+
+      // If we have detailed user data from a separate call we might merge it, 
+      // but strictly for the list, we can use the getUsers response. 
+      // However, the original code used a mock that provided stats per user.
+      // For now, let's use the users from the API but we might lack some stats in the table 
+      // until we implement a better aggregation endpoint.
+      // To keep it simple and working:
+      setUsers(realUsers);
+
+      // Generate threats from real logs (e.g. blocked or low score)
+      const realThreats = realLogs.filter(l => l.decision === 'Blocked' || l.trustScore < 40).slice(0, 10);
+      setThreats(realThreats);
+
+    } catch (error) {
+      console.error('Failed to fetch dashboard data', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, [filterUser, filterRole, filterDecision, filterResource]);
@@ -81,15 +147,19 @@ export default function AdminDashboard() {
           lastSeen: new Date().toISOString()
         },
         recommendations: data.recommendations,
-        logs: data.scans
+        logs: data.scans.map((scan: any) => ({
+          ...scan,
+          factors: (scan.factors || []).map((f: any) => ({
+            ...f,
+            detail: f.details || f.detail
+          }))
+        }))
       };
 
       setSelectedUser(userDetail);
     } catch (e) {
-      console.warn('Failed to get user detail from real API, falling back to mock', e);
-      // Fallback or error handling
-      const detail = await getMockUserDetail(userId);
-      setSelectedUser(detail);
+      console.warn('Failed to get user detail from real API', e);
+      alert('Failed to load user details');
     }
     setLoadingUser(false);
   };
@@ -108,14 +178,16 @@ export default function AdminDashboard() {
   };
 
   const decisionStyle = (d: string) => {
-    if (d === 'Allow') return 'text-white bg-white/10';
-    if (d === 'MFA Required') return 'text-white/80 bg-white/5';
+    const lowerD = d.toLowerCase();
+    if (lowerD === 'allow') return 'text-white bg-white/10';
+    if (lowerD === 'mfa_required' || lowerD === 'mfa required') return 'text-white/80 bg-white/5';
     return 'text-white/60 bg-white/5 line-through';
   };
 
   const statusStyle = (s: string) => {
-    if (s === 'active') return 'text-white bg-white/10';
-    if (s === 'pending') return 'text-white/70 bg-white/5';
+    const lowerS = s.toLowerCase();
+    if (lowerS === 'active') return 'text-white bg-white/10';
+    if (lowerS === 'pending') return 'text-white/70 bg-white/5';
     return 'text-white/50 bg-white/5 line-through';
   };
 

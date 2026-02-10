@@ -38,6 +38,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost
+      TRUST_ENGINE_URL: http://trust-engine:5000/scan
     ports:
       - "3001:3001"
     depends_on:
@@ -46,11 +47,29 @@ services:
     networks:
       - soraiam-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 40s
+
+  # Python Trust Engine (PDP)
+  trust-engine:
+    build:
+      context: ./trust_engine
+      dockerfile: Dockerfile
+    container_name: soraiam-trust-engine
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    networks:
+      - soraiam-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "-X", "POST", "http://localhost:5000/scan", "-d", "{\"test\":true}", "-H", "Content-Type: application/json" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Frontend
   frontend:
@@ -66,7 +85,7 @@ services:
     networks:
       - soraiam-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 30s
       timeout: 3s
       retries: 3

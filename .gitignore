@@ -28,3 +28,8 @@ dist-ssr
 mongo-data/
 .env
 server/.env
+*.log
+*_out.txt
+*_out_2.txt
+trust_engine/*.log
+trust_engine/*_out.txt

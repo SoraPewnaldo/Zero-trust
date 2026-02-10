@@ -3,6 +3,8 @@ import { AuthRequest } from '../middleware/auth.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { User } from '../models/User.js';
 import { Device } from '../models/Device.js';
+import { AuditLog } from '../models/AuditLog.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get admin dashboard statistics
@@ -114,23 +116,100 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         }
 
         // Query scans
-        const scans = await ScanResult.find(filter)
+        const scanPromise = ScanResult.find(filter)
             .populate('userId', 'username role email')
             .populate('resourceId', 'name sensitivity')
             .populate('deviceId', 'deviceName deviceType')
             .sort({ createdAt: -1 })
             .limit(Number(limit))
-            .skip((Number(page) - 1) * Number(limit));
+            .lean();
 
-        const total = await ScanResult.countDocuments(filter);
+        // Query audit logs (login failures, user creation, user deletion)
+        const auditFilter: any = {
+            eventType: { $in: ['login_failed', 'user_created', 'user_deleted'] }
+        };
+
+        if (startDate || endDate) {
+            auditFilter.createdAt = {};
+            if (startDate) auditFilter.createdAt.$gte = new Date(startDate as string);
+            if (endDate) auditFilter.createdAt.$lte = new Date(endDate as string);
+        }
+
+        const auditPromise = AuditLog.find(auditFilter)
+            .sort({ createdAt: -1 })
+            .limit(Number(limit))
+            .lean();
+
+        const [scans, auditLogs] = await Promise.all([scanPromise, auditPromise]);
+
+        // Map audit logs to scan result shape for unified display
+        const mappedAuditLogs = auditLogs.map(log => {
+            let decision = 'blocked';
+            let factors = [{
+                name: 'Authentication Failed',
+                status: 'fail',
+                details: log.details?.reason || 'Invalid credentials'
+            }];
+            let resourceName = 'Authentication';
+            let trustScore = 0;
+
+            if (log.eventType === 'user_created') {
+                decision = 'allow';
+                resourceName = 'User Management';
+                factors = [{ name: 'User Created', status: 'pass', details: `Created user ${log.target.name}` }];
+                trustScore = 100;
+            } else if (log.eventType === 'user_deleted') {
+                decision = 'allow'; // or 'blocked' to highlight it? 'allow' implies success of action.
+                resourceName = 'User Management';
+                factors = [{ name: 'User Deleted', status: 'pass', details: `Deleted user ${log.target.name}` }];
+                trustScore = 100;
+            }
+
+            return {
+                _id: log._id,
+                scanId: log.eventId,
+                userId: log.actor.userId ? {
+                    _id: log.actor.userId,
+                    username: log.actor.username || 'Unknown',
+                    role: log.actor.role || 'unknown'
+                } : {
+                    _id: 'unknown',
+                    username: log.actor.username || 'Unknown',
+                    role: 'unknown'
+                },
+                resourceId: {
+                    name: resourceName
+                },
+                deviceId: {
+                    deviceName: 'Admin Console'
+                },
+                trustScore: trustScore,
+                decision: decision,
+                createdAt: log.timestamp,
+                context: {
+                    ipAddress: log.context.ipAddress,
+                    userAgent: log.context.userAgent,
+                    geolocation: { city: log.details?.reason || log.eventType }
+                },
+                factors: factors
+            };
+        });
+
+        // Merge and sort
+        const combinedLogs = [...scans, ...mappedAuditLogs].sort((a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ).slice(0, Number(limit));
+
+        const totalScans = await ScanResult.countDocuments(filter);
+        const totalAudit = await AuditLog.countDocuments(auditFilter);
 
         res.json({
-            scans,
+            scans: combinedLogs,
             pagination: {
                 page: Number(page),
                 limit: Number(limit),
-                total,
-                pages: Math.ceil(total / Number(limit)),
+                total: totalScans + totalAudit,
+                pages: Math.ceil((totalScans + totalAudit) / Number(limit)),
             },
         });
     } catch (error) {
@@ -344,6 +423,32 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         // @ts-ignore
         delete userResponse.mfaSecret;
 
+        // Log user creation
+        await AuditLog.create({
+            eventId: uuidv4(),
+            eventType: 'user_created',
+            eventCategory: 'administration',
+            severity: 'info',
+            actor: {
+                userId: req.user!.id, // Admin
+                username: req.user!.username,
+                role: req.user!.role,
+                ipAddress: req.ip,
+            },
+            target: {
+                type: 'user',
+                id: newUser._id,
+                name: newUser.username
+            },
+            action: 'create_user',
+            result: 'success',
+            context: {
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'],
+            },
+            timestamp: new Date(),
+        });
+
         res.status(201).json({
             message: 'User created successfully',
             user: userResponse
@@ -377,6 +482,32 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
 
         // Delete user
         await User.findByIdAndDelete(userId);
+
+        // Sort of an audit log for deletion
+        await AuditLog.create({
+            eventId: uuidv4(),
+            eventType: 'user_deleted',
+            eventCategory: 'administration',
+            severity: 'warning',
+            actor: {
+                userId: req.user!.id,
+                username: req.user!.username,
+                role: req.user!.role,
+                ipAddress: req.ip,
+            },
+            target: {
+                type: 'user',
+                id: user._id,
+                name: user.username
+            },
+            action: 'delete_user',
+            result: 'success',
+            context: {
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'],
+            },
+            timestamp: new Date(),
+        });
 
         // Optionally clean up related data like scans and devices
         // await ScanResult.deleteMany({ userId });

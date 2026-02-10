@@ -1,4 +1,5 @@
 import UAParser from 'ua-parser-js';
+import crypto from 'crypto';
 
 export interface DetectedContext {
     deviceType: 'managed' | 'personal';
@@ -69,7 +70,6 @@ export class ContextDetectionService {
      */
     private static generateDeviceFingerprint(userAgent: string, ipAddress: string): string {
         // Simplified fingerprint - in production, use more sophisticated methods
-        const crypto = require('crypto');
         return crypto
             .createHash('sha256')
             .update(`${userAgent}-${ipAddress}`)
