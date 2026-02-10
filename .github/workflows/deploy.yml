@@ -59,7 +59,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-          cache-to: type=gha,mode=max
+
       
       - name: Extract metadata for trust-engine
         id: meta-trust-engine
