@@ -119,6 +119,9 @@ export const api = {
             resourceId?: string;
             startDate?: string;
             endDate?: string;
+            role?: string;
+            resource?: string;
+            username?: string;
         }) => {
             const response = await apiClient.get('/admin/scans', { params });
             return response.data;

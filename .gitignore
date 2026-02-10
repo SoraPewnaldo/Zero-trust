@@ -33,3 +33,4 @@ server/.env
 *_out_2.txt
 trust_engine/*.log
 trust_engine/*_out.txt
+server_logs.txt

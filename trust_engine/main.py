@@ -75,12 +75,13 @@ def scan_os_query():
         # Note: 'antivirus_products' table is not available on all platforms/osquery versions without extensions.
         
     except FileNotFoundError:
-        print("⚠️  [WARN] osqueryi not found. Using fallback simulation.")
-        # Fallback for demonstration if tools aren't installed
+        import random
+        print("⚠️  [WARN] osqueryi not found. Using probabilistic fallback.")
+        # Randomize for demo variety
         system_data["os_version"] = platform.system() + " " + platform.release()
-        system_data["firewall_enabled"] = True
-        system_data["antivirus_running"] = True
-        system_data["os_updated"] = True
+        system_data["firewall_enabled"] = random.choice([True, True, False]) # 66% pass
+        system_data["antivirus_running"] = random.choice([True, False])     # 50% pass
+        system_data["os_updated"] = random.choice([True, False, False])     # 33% pass
         
     except Exception as e:
         print(f"❌ [ERR] OSQuery failed: {e}")
@@ -113,9 +114,10 @@ def scan_nmap():
                         found_risky = True
         
     except FileNotFoundError:
-        print("⚠️  [WARN] nmap not found. Using fallback simulation.")
-        open_ports = [80, 443] # Simulate web ports only
-        found_risky = False
+        import random
+        print("⚠️  [WARN] nmap not found. Using probabilistic fallback.")
+        open_ports = [80, 443]
+        found_risky = random.choice([True, False, False, False]) # 25% risk chance
         
     except Exception as e:
         print(f"❌ [ERR] Nmap failed: {e}")
