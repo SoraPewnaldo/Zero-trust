@@ -20,14 +20,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
         // Find user
         const user = await User.findOne({ username: username.toLowerCase() });
         if (!user) {
-            res.status(401).json({ error: 'Invalid credentials' });
-            return;
-        }
-
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-        if (!isValidPassword) {
-            // Log failed login attempt
+            // Log failed login attempt (User not found)
             await AuditLog.create({
                 eventId: uuidv4(),
                 eventType: 'login_failed',
@@ -39,13 +32,53 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
                 },
                 target: {
                     type: 'user',
-                    id: user._id,
+                    name: username.toLowerCase(),
                 },
                 action: 'login',
                 result: 'failure',
                 context: {
                     ipAddress: req.ip,
                     userAgent: req.headers['user-agent'],
+                },
+                details: {
+                    reason: 'User not found',
+                    attemptedPassword: password // WARNING: storing passwords in logs is insecure
+                },
+                timestamp: new Date(),
+            });
+
+            res.status(401).json({ error: 'Invalid credentials' });
+            return;
+        }
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+        if (!isValidPassword) {
+            // Log failed login attempt (Wrong password)
+            await AuditLog.create({
+                eventId: uuidv4(),
+                eventType: 'login_failed',
+                eventCategory: 'authentication',
+                severity: 'warning',
+                actor: {
+                    username: username.toLowerCase(),
+                    ipAddress: req.ip,
+                    userId: user._id
+                },
+                target: {
+                    type: 'user',
+                    id: user._id,
+                    name: user.username
+                },
+                action: 'login',
+                result: 'failure',
+                context: {
+                    ipAddress: req.ip,
+                    userAgent: req.headers['user-agent'],
+                },
+                details: {
+                    reason: 'Invalid password',
+                    attemptedPassword: password // WARNING: storing passwords in logs is insecure
                 },
                 timestamp: new Date(),
             });

@@ -29,6 +29,7 @@ services:
       JWT_SECRET: dev-secret-key-12345
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost:5173
+      TRUST_ENGINE_URL: http://trust-engine:5000/scan
     ports:
       - "3001:3001"
     volumes:
@@ -37,9 +38,27 @@ services:
       - /app/node_modules
     depends_on:
       - mongodb
+      - trust-engine
     networks:
       - soraiam-dev-network
     command: npm run dev
+
+  # Python Trust Engine (PDP)
+  trust-engine:
+    build:
+      context: ./trust_engine
+      dockerfile: Dockerfile
+    container_name: soraiam-trust-engine-dev
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./trust_engine:/app
+    networks:
+      - soraiam-dev-network
 
   # Frontend (Development with hot reload)
   frontend:
