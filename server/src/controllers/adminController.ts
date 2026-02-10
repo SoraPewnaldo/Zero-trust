@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { User } from '../models/User.js';
 import { Device } from '../models/Device.js';
+import { Resource } from '../models/Resource.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -102,21 +103,73 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
             resourceId,
             startDate,
             endDate,
+            role,
+            resource,
+            username
         } = req.query;
 
-        // Build filter
-        const filter: any = {};
-        if (decision) filter.decision = decision;
-        if (userId) filter.userId = userId;
-        if (resourceId) filter.resourceId = resourceId;
-        if (startDate || endDate) {
-            filter.createdAt = {};
-            if (startDate) filter.createdAt.$gte = new Date(startDate as string);
-            if (endDate) filter.createdAt.$lte = new Date(endDate as string);
+        // 1. Build ScanResult Filter
+        const scanFilter: any = {};
+        if (decision) scanFilter.decision = (decision as string).toLowerCase();
+        if (userId) scanFilter.userId = userId;
+
+        // If username is provided but not userId, we need to find matching user IDs
+        if (username && !userId) {
+            const matchingUsers = await User.find({
+                username: { $regex: username as string, $options: 'i' }
+            }).select('_id');
+            scanFilter.userId = { $in: matchingUsers.map(u => u._id) };
         }
 
-        // Query scans
-        const scanPromise = ScanResult.find(filter)
+        if (resourceId) scanFilter.resourceId = resourceId;
+
+        // Filter ScanResult by resource name if 'resource' string provided
+        if (resource && !resourceId) {
+            const matchingResources = await Resource.find({
+                name: { $regex: resource as string, $options: 'i' }
+            }).select('_id');
+            scanFilter.resourceId = { $in: matchingResources.map(r => r._id) };
+        }
+
+        if (startDate || endDate) {
+            scanFilter.createdAt = {};
+            if (startDate) scanFilter.createdAt.$gte = new Date(startDate as string);
+            if (endDate) scanFilter.createdAt.$lte = new Date(endDate as string);
+        }
+
+        // 2. Build AuditLog Filter
+        const auditFilter: any = {
+            // We exclude access_attempt because it duplicates ScanResult
+            eventType: { $in: ['login_failed', 'login_success', 'logout', 'user_created', 'user_deleted', 'mfa_verified'] }
+        };
+
+        if (decision) {
+            const lowerDecision = (decision as string).toLowerCase();
+            if (lowerDecision === 'allow') auditFilter.result = 'success';
+            if (lowerDecision === 'blocked') auditFilter.result = 'failure';
+        }
+
+        if (username) {
+            auditFilter['actor.username'] = { $regex: username as string, $options: 'i' };
+        }
+
+        if (role) {
+            auditFilter['actor.role'] = role;
+        }
+
+        if (resource) {
+            // Audit logs store resource in 'target.name'
+            auditFilter['target.name'] = { $regex: resource as string, $options: 'i' };
+        }
+
+        if (startDate || endDate) {
+            auditFilter.timestamp = {};
+            if (startDate) auditFilter.timestamp.$gte = new Date(startDate as string);
+            if (endDate) auditFilter.timestamp.$lte = new Date(endDate as string);
+        }
+
+        // 3. Execute Queries
+        const scanPromise = ScanResult.find(scanFilter)
             .populate('userId', 'username role email')
             .populate('resourceId', 'name sensitivity')
             .populate('deviceId', 'deviceName deviceType')
@@ -124,83 +177,132 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
             .limit(Number(limit))
             .lean();
 
-        // Query audit logs (login failures, user creation, user deletion)
-        const auditFilter: any = {
-            eventType: { $in: ['login_failed', 'user_created', 'user_deleted'] }
-        };
-
-        if (startDate || endDate) {
-            auditFilter.createdAt = {};
-            if (startDate) auditFilter.createdAt.$gte = new Date(startDate as string);
-            if (endDate) auditFilter.createdAt.$lte = new Date(endDate as string);
-        }
-
         const auditPromise = AuditLog.find(auditFilter)
-            .sort({ createdAt: -1 })
+            .sort({ timestamp: -1 })
             .limit(Number(limit))
             .lean();
 
         const [scans, auditLogs] = await Promise.all([scanPromise, auditPromise]);
 
-        // Map audit logs to scan result shape for unified display
-        const mappedAuditLogs = auditLogs.map(log => {
-            let decision = 'blocked';
-            let factors = [{
-                name: 'Authentication Failed',
-                status: 'fail',
-                details: log.details?.reason || 'Invalid credentials'
-            }];
-            let resourceName = 'Authentication';
-            let trustScore = 0;
+        console.log('DEBUG: Scans found:', scans.length);
+        console.log('DEBUG: Audit logs found:', auditLogs.length);
 
-            if (log.eventType === 'user_created') {
-                decision = 'allow';
-                resourceName = 'User Management';
-                factors = [{ name: 'User Created', status: 'pass', details: `Created user ${log.target.name}` }];
-                trustScore = 100;
-            } else if (log.eventType === 'user_deleted') {
-                decision = 'allow'; // or 'blocked' to highlight it? 'allow' implies success of action.
-                resourceName = 'User Management';
-                factors = [{ name: 'User Deleted', status: 'pass', details: `Deleted user ${log.target.name}` }];
-                trustScore = 100;
+
+
+        if (scans.length > 0) {
+            console.log('DEBUG: Scans content detail:', JSON.stringify(scans.map(s => ({
+                id: s._id,
+                user: (s.userId as any)?.username || s.userId,
+                score: s.trustScore,
+                decision: s.decision,
+                resource: (s.resourceId as any)?.name
+            }))));
+        }
+
+        // 4. Map AuditLog entries to ScanResult shape
+        const mappedAuditLogs = await Promise.all(auditLogs.map(async (log) => {
+            let logDecision = log.result === 'success' ? 'allow' : 'blocked';
+            let factors: any[] = [];
+            let resourceName = 'System';
+
+            // Try to find a real trust score for this user if it's a login event
+            let trustScore = 0; // Default to 0 for Zero Trust if no scan exists
+            if (log.eventType.includes('login') || log.eventType === 'mfa_verified') {
+                // Try searching by userId first, then by username as fallback
+                let latestScan = await ScanResult.findOne({ userId: log.actor?.userId })
+                    .sort({ createdAt: -1 })
+                    .select('trustScore decision')
+                    .lean();
+
+                if (!latestScan && log.actor?.username) {
+                    const matchingUser = await User.findOne({ username: log.actor.username }).select('_id');
+                    if (matchingUser) {
+                        latestScan = await ScanResult.findOne({ userId: matchingUser._id })
+                            .sort({ createdAt: -1 })
+                            .select('trustScore decision')
+                            .lean();
+                    }
+                }
+
+                if (latestScan) {
+                    trustScore = (latestScan as any).trustScore;
+                    // If the latest scan was blocked, we should reflect that in the log decision too
+                    if ((latestScan as any).decision === 'blocked') logDecision = 'blocked';
+                }
+            }
+
+            switch (log.eventType) {
+                case 'login_success':
+                    resourceName = 'Authentication';
+                    factors = [{ name: 'Login Success', status: trustScore >= 60 ? 'pass' : 'fail', details: 'User authenticated successfully' }];
+                    break;
+                case 'login_failed':
+                    logDecision = 'blocked';
+                    resourceName = 'Authentication';
+                    factors = [{ name: 'Authentication Failed', status: 'fail', details: log.details?.reason || 'Invalid credentials' }];
+                    break;
+                case 'logout':
+                    resourceName = 'Authentication';
+                    factors = [{ name: 'Logout', status: 'pass', details: 'User logged out' }];
+                    break;
+                case 'mfa_verified':
+                    resourceName = 'Authentication';
+                    factors = [{ name: 'MFA Verified', status: 'pass', details: 'Step-up authentication successful' }];
+                    break;
+                case 'user_created':
+                    logDecision = 'allow';
+                    resourceName = 'User Management';
+                    factors = [{ name: 'User Created', status: 'pass', details: `Created user ${log.target?.name}` }];
+                    break;
+                case 'user_deleted':
+                    logDecision = 'allow';
+                    resourceName = 'User Management';
+                    factors = [{ name: 'User Deleted', status: 'pass', details: `Deleted user ${log.target?.name}` }];
+                    break;
             }
 
             return {
                 _id: log._id,
                 scanId: log.eventId,
-                userId: log.actor.userId ? {
-                    _id: log.actor.userId,
-                    username: log.actor.username || 'Unknown',
-                    role: log.actor.role || 'unknown'
-                } : {
-                    _id: 'unknown',
-                    username: log.actor.username || 'Unknown',
-                    role: 'unknown'
+                userId: {
+                    _id: log.actor?.userId || 'unknown',
+                    username: log.actor?.username || 'Unknown',
+                    role: log.actor?.role || 'unknown'
                 },
                 resourceId: {
-                    name: resourceName
+                    name: log.target?.name || resourceName
                 },
                 deviceId: {
-                    deviceName: 'Admin Console'
+                    deviceName: log.eventType.startsWith('user_') ? 'Admin Console' :
+                        (log.context?.userAgent ? (
+                            log.context.userAgent.includes('Chrome') ? 'Chrome Browser' :
+                                log.context.userAgent.includes('Firefox') ? 'Firefox Browser' :
+                                    log.context.userAgent.includes('Safari') ? 'Safari Browser' :
+                                        'Web Browser'
+                        ) : 'Web Session')
                 },
                 trustScore: trustScore,
-                decision: decision,
+                decision: logDecision,
                 createdAt: log.timestamp,
                 context: {
-                    ipAddress: log.context.ipAddress,
-                    userAgent: log.context.userAgent,
+                    deviceType: 'Web',
+                    networkType: 'External',
+                    ipAddress: log.context?.ipAddress,
+                    userAgent: log.context?.userAgent,
                     geolocation: { city: log.details?.reason || log.eventType }
                 },
                 factors: factors
             };
-        });
+        }));
 
-        // Merge and sort
+        console.log('DEBUG: Mapped Audit scores:', mappedAuditLogs.map(a => a.trustScore));
+
+        // 5. Merge and sort
         const combinedLogs = [...scans, ...mappedAuditLogs].sort((a: any, b: any) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         ).slice(0, Number(limit));
 
-        const totalScans = await ScanResult.countDocuments(filter);
+        const totalScans = await ScanResult.countDocuments(scanFilter);
         const totalAudit = await AuditLog.countDocuments(auditFilter);
 
         res.json({

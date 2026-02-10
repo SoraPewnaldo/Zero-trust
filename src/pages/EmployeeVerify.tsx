@@ -1,75 +1,112 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  postScan, verifyMfa, detectContext,
-  ScanResult, ResourceType, AccessContext,
-} from '@/lib/mock-api';
+import { api } from '@/lib/api';
+import { ScanResult } from '@/lib/types';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Shield, Monitor, Lock, Key, CheckCircle, Laptop, Wifi } from 'lucide-react';
 
-const RESOURCES: ResourceType[] = ['Internal Dashboard', 'Git Repository', 'Production Console'];
+interface Resource {
+  _id: string;
+  name: string;
+  sensitivity: string;
+}
 
 export default function EmployeeVerify() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [detectedContext, setDetectedContext] = useState<AccessContext | null>(null);
+  const [scanResult, setScanResult] = useState<any | null>(null);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [selectedResourceId, setSelectedResourceId] = useState<string>('');
 
-  const [selectedResource, setSelectedResource] = useState<ResourceType>('Internal Dashboard');
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const data = await api.resources.getAll();
+        setResources(data.resources || []);
+        if (data.resources?.length > 0) {
+          setSelectedResourceId(data.resources[0]._id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch resources', error);
+      }
+    };
+    fetchResources();
+  }, []);
 
   const handleScan = async () => {
-    if (!user) return;
+    if (!user || !selectedResourceId) return;
     setScanning(true);
-    const context = detectContext();
-    setDetectedContext(context);
-    const result = await postScan(user.id, user.username, user.role, selectedResource, context);
-    setScanResult(result);
-    setScanning(false);
+    try {
+      const result = await api.verification.initiateScan(selectedResourceId);
+      setScanResult(result);
+    } catch (error) {
+      console.error('Scan failed', error);
+      alert('Verification server error. Please try again.');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleMfaVerify = async () => {
     if (!scanResult) return;
+    const mfaCode = prompt('Enter 6-digit MFA code (e.g. 123456):');
+    if (!mfaCode) return;
+
     setVerifying(true);
-    const updated = await verifyMfa(scanResult.id);
-    setScanResult(updated);
-    setVerifying(false);
+    try {
+      const updated = await api.verification.verifyMFA(scanResult.scanId, mfaCode);
+      setScanResult(updated);
+    } catch (error) {
+      console.error('MFA verification failed', error);
+      alert('Invalid MFA code');
+    } finally {
+      setVerifying(false);
+    }
   };
 
-  const isAllowed = scanResult?.decision === 'Allow' || scanResult?.mfaVerified;
+  const isAllowed = scanResult?.decision === 'allow' || scanResult?.mfaVerified || scanResult?.accessGranted;
+
+  const decisionStyle = (d: string) => {
+    const lowerD = d?.toLowerCase();
+    if (lowerD === 'allow') return 'text-green-400 border-green-500/30 bg-green-500/10';
+    if (lowerD === 'mfa_required' || lowerD === 'mfa required') return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
+    if (lowerD === 'blocked') return 'text-red-400 border-red-500/30 bg-red-500/10';
+    return 'text-white/40 border-white/20 bg-white/5';
+  };
 
   const factorStatusStyle = (s: string) => {
-    if (s === 'pass') return 'text-white bg-white/10';
-    if (s === 'warn') return 'text-white/70 bg-white/[0.08]';
+    const lowerS = s?.toLowerCase();
+    if (lowerS === 'pass') return 'text-green-400/80 border-green-500/20 bg-green-500/5';
+    if (lowerS === 'warn') return 'text-yellow-400/80 border-yellow-500/20 bg-yellow-500/5';
+    if (lowerS === 'fail') return 'text-red-400/80 border-red-500/20 bg-red-500/5';
     return 'text-white/50 bg-white/5';
   };
 
   return (
     <DashboardLayout title="ACCESS VERIFICATION" subtitle="IDENTITY & DEVICE TRUST CHECK REQUIRED">
       <div className="max-w-2xl mx-auto">
-        {/* Status Banner */}
         <div className="border border-white/20 p-6 mb-6 text-center">
           <Shield size={32} className="text-white/40 mx-auto mb-3" />
           <h2 className="text-lg font-mono text-white tracking-wider mb-2">
             {!scanResult ? 'VERIFICATION REQUIRED' :
               isAllowed ? 'ACCESS GRANTED' :
-              scanResult.decision === 'MFA Required' ? 'ADDITIONAL VERIFICATION NEEDED' :
-              'ACCESS DENIED'}
+                scanResult.decision === 'mfa_required' ? 'ADDITIONAL VERIFICATION NEEDED' :
+                  'ACCESS DENIED'}
           </h2>
           <p className="text-[10px] font-mono text-white/40">
             {!scanResult
               ? 'Complete a device trust scan to access your dashboard'
               : isAllowed
-              ? 'Your identity and device have been verified. You may proceed.'
-              : scanResult.decision === 'MFA Required'
-              ? 'Your trust score requires step-up authentication.'
-              : 'Your device does not meet security requirements. Try again with different context.'}
+                ? 'Your identity and device have been verified. You may proceed.'
+                : scanResult.decision === 'mfa_required'
+                  ? 'Your trust score requires step-up authentication.'
+                  : 'Your device does not meet security requirements.'}
           </p>
         </div>
 
-        {/* If allowed, show proceed button */}
         {isAllowed && (
           <div className="text-center mb-6">
             <button
@@ -83,7 +120,6 @@ export default function EmployeeVerify() {
           </div>
         )}
 
-        {/* Scan Form - show when not yet allowed */}
         {!isAllowed && (
           <div className="border border-white/20 p-4 lg:p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -92,48 +128,23 @@ export default function EmployeeVerify() {
               <div className="flex-1 h-px bg-white/10"></div>
             </div>
 
-            {/* Resource Selection */}
             <div className="mb-4">
               <label className="block text-[10px] font-mono text-white/40 mb-1.5 tracking-wider">TARGET RESOURCE</label>
               <div className="flex flex-wrap gap-2">
-                {RESOURCES.map(r => (
+                {resources.map(r => (
                   <button
-                    key={r}
-                    onClick={() => setSelectedResource(r)}
-                    className={`px-3 py-1.5 text-[10px] font-mono border transition-all duration-200 ${
-                      selectedResource === r
-                        ? 'border-white text-white bg-white/10'
-                        : 'border-white/20 text-white/40 hover:text-white/60 hover:border-white/40'
-                    }`}
+                    key={r._id}
+                    onClick={() => setSelectedResourceId(r._id)}
+                    className={`px-3 py-1.5 text-[10px] font-mono border transition-all duration-200 ${selectedResourceId === r._id
+                        ? 'border-white text-white bg-white/20'
+                        : 'border-white/10 text-white/40 hover:text-white/60 hover:border-white/40'
+                      }`}
                   >
-                    {r === 'Internal Dashboard' && <Monitor size={10} className="inline mr-1.5 -mt-0.5" />}
-                    {r === 'Git Repository' && <Lock size={10} className="inline mr-1.5 -mt-0.5" />}
-                    {r === 'Production Console' && <Shield size={10} className="inline mr-1.5 -mt-0.5" />}
-                    {r.toUpperCase()}
+                    {r.name.toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Auto-detected Context Display */}
-            {detectedContext && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
-                <div className="border border-white/10 p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Laptop size={10} className="text-white/40" />
-                    <span className="text-[10px] font-mono text-white/40 tracking-wider">DEVICE TYPE (AUTO-DETECTED)</span>
-                  </div>
-                  <span className="text-xs font-mono text-white/80">{detectedContext.deviceType.toUpperCase()}</span>
-                </div>
-                <div className="border border-white/10 p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wifi size={10} className="text-white/40" />
-                    <span className="text-[10px] font-mono text-white/40 tracking-wider">NETWORK TYPE (AUTO-DETECTED)</span>
-                  </div>
-                  <span className="text-xs font-mono text-white/80">{detectedContext.networkType.toUpperCase()}</span>
-                </div>
-              </div>
-            )}
 
             <button
               onClick={handleScan}
@@ -147,7 +158,6 @@ export default function EmployeeVerify() {
           </div>
         )}
 
-        {/* Scan Result */}
         {scanResult && (
           <div className="border border-white/20 p-4 lg:p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -156,100 +166,63 @@ export default function EmployeeVerify() {
               <div className="flex-1 h-px bg-white/10"></div>
             </div>
 
-            {/* Trust Score */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono text-white/50 tracking-wider">TRUST SCORE</span>
-                <span className="text-xl font-mono text-white font-bold">{scanResult.trustScore}/100</span>
+                <span className={`text-xl font-mono font-bold ${scanResult.trustScore >= 60 ? 'text-green-400' : 'text-red-400'}`}>{scanResult.trustScore}/100</span>
               </div>
               <div className="w-full h-2 bg-white/10 border border-white/20">
                 <div
-                  className="h-full bg-white transition-all duration-1000 ease-out"
+                  className={`h-full transition-all duration-1000 ease-out ${scanResult.trustScore >= 60 ? 'bg-green-500' : 'bg-red-500'}`}
                   style={{ width: `${scanResult.trustScore}%` }}
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4 mb-4 text-[10px] font-mono">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-white/50">DECISION:</span>
-                <span className={`px-3 py-1 text-xs font-mono border border-white/20 ${
-                  scanResult.decision === 'Allow' ? 'text-white bg-white/10' :
-                  scanResult.decision === 'MFA Required' ? 'text-white/80 bg-white/5' :
-                  'text-white/60 bg-white/5'
-                }`}>
-                  {scanResult.decision.toUpperCase()}
+                <span className="text-white/50">DECISION:</span>
+                <span className={`px-2 py-0.5 border ${decisionStyle(scanResult.decision)}`}>
+                  {scanResult.decision?.toUpperCase()}
                   {scanResult.mfaVerified && ' ✓ MFA'}
                 </span>
               </div>
-              {scanResult.resource && (
-                <span className="text-[10px] font-mono text-white/50">RESOURCE: {scanResult.resource.toUpperCase()}</span>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-white/50">RESOURCE:</span>
+                <span className="text-white/80">{scanResult.resource?.name?.toUpperCase() || 'UNKNOWN'}</span>
+              </div>
             </div>
 
-            {/* MFA Step-Up */}
-            {scanResult.decision === 'MFA Required' && !scanResult.mfaVerified && (
-              <div className="border border-white/20 p-4 space-y-3 mb-4">
+            {scanResult.decision === 'mfa_required' && !scanResult.mfaVerified && (
+              <div className="border border-yellow-500/20 p-4 space-y-3 mb-4 bg-yellow-500/5">
                 <div className="flex items-center gap-2">
-                  <Key size={14} className="text-white/60" />
-                  <span className="text-xs font-mono text-white/80">ADDITIONAL VERIFICATION REQUIRED</span>
+                  <Key size={14} className="text-yellow-400" />
+                  <span className="text-[10px] font-mono text-yellow-400/90 tracking-wider uppercase">ADDITIONAL VERIFICATION REQUIRED</span>
                 </div>
-                <p className="text-[10px] font-mono text-white/40">
-                  Complete MFA verification to gain access to the dashboard.
-                </p>
                 <button
                   onClick={handleMfaVerify}
                   disabled={verifying}
-                  className="relative px-5 py-2 bg-transparent text-white font-mono text-xs border border-white hover:bg-white hover:text-black transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group"
+                  className="w-full py-2 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/20 transition-all font-mono text-[10px]"
                 >
-                  <span className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
                   {verifying ? '◐ VERIFYING...' : 'VERIFY WITH MFA'}
                 </button>
               </div>
             )}
 
-            {/* MFA Success */}
-            {scanResult.mfaVerified && (
-              <div className="border border-white/20 p-3 flex items-center gap-3 mb-4">
-                <CheckCircle size={14} className="text-white/60" />
-                <span className="text-[10px] font-mono text-white/60">MFA VERIFICATION SUCCESSFUL — ACCESS GRANTED</span>
-              </div>
-            )}
-
-            {/* Decision Factors */}
             {scanResult.factors && scanResult.factors.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono text-white/40 tracking-wider">DECISION FACTORS</span>
-                {scanResult.factors.map((factor, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 border border-white/10">
-                    <div className={`w-2 h-2 shrink-0 ${factor.status === 'pass' ? 'bg-white/80' : factor.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+              <div className="space-y-1.5 mt-4">
+                <div className="text-[9px] font-mono text-white/30 tracking-widest mb-2">DECISION FACTORS</div>
+                {scanResult.factors.map((factor: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-3 p-2 border border-white/5 bg-white/[0.02]">
+                    <div className={`w-1.5 h-1.5 shrink-0 ${factor.status === 'pass' ? 'bg-green-500' : factor.status === 'warn' ? 'bg-yellow-500' : factor.status === 'fail' ? 'bg-red-500' : 'bg-white/20'}`}></div>
                     <span className="text-[10px] font-mono text-white/70 flex-1">{factor.name}</span>
-                    <span className={`px-1.5 py-0.5 text-[9px] font-mono border border-white/15 ${factorStatusStyle(factor.status)}`}>
+                    <span className={`px-1.5 py-0.5 text-[9px] font-mono border ${factorStatusStyle(factor.status)}`}>
                       {factor.status.toUpperCase()}
-                    </span>
-                    <span className={`text-[10px] font-mono ${factor.impact >= 0 ? 'text-white/60' : 'text-white/40'}`}>
-                      {factor.impact >= 0 ? '+' : ''}{factor.impact}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Blocked - retry hint */}
-        {scanResult && scanResult.decision === 'Blocked' && (
-          <div className="text-center">
-            <p className="text-[10px] font-mono text-white/30 mb-3">
-              Your current device/network context does not meet the trust threshold.
-            </p>
-            <button
-              onClick={() => setScanResult(null)}
-              className="px-5 py-2 text-[10px] font-mono text-white/50 border border-white/20 hover:border-white/40 hover:text-white/70 transition-all"
-            >
-              RETRY VERIFICATION
-            </button>
           </div>
         )}
       </div>

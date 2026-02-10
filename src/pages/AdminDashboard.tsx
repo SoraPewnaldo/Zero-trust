@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/mock-api';
+import { ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/types';
 import { api } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import EmployeeForm from '@/components/admin/EmployeeForm';
@@ -25,12 +25,19 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [logsResponse, statsResponse, userData, usersList] = await Promise.all([
-        api.admin.getScanLogs({ limit: 100 }), // Fetch recent logs
+      const [logsResponse, statsResponse, usersResponse] = await Promise.all([
+        api.admin.getScanLogs({
+          limit: 100,
+          decision: filterDecision ? filterDecision.toLowerCase() : undefined,
+          role: filterRole ? filterRole.toLowerCase() : undefined,
+          resource: filterResource ? filterResource.toLowerCase() : undefined,
+          username: filterUser ? filterUser : undefined
+        }),
         api.admin.getDashboardStats(),
-        api.admin.getUsers().catch(() => []),
         api.admin.getUsers().catch(() => ({ users: [] }))
       ]);
+
+      const usersList = usersResponse?.users || [];
 
       // Map backend logs to frontend ScanResult interface
       const realLogs: ScanResult[] = logsResponse.scans.map((scan: any) => ({
@@ -57,7 +64,7 @@ export default function AdminDashboard() {
         mfaVerified: scan.mfaVerified
       }));
 
-      // Filter logs based on UI filters (client-side for now to match mock behavior)
+      // Applying active filters to the real-time activity log
       let filteredLogs = realLogs;
       if (filterUser) filteredLogs = filteredLogs.filter(l => l.username.toLowerCase().includes(filterUser.toLowerCase()));
       if (filterRole) filteredLogs = filteredLogs.filter(l => l.role === filterRole);
@@ -90,11 +97,8 @@ export default function AdminDashboard() {
         status: u.status
       }));
 
-      // If we have detailed user data from a separate call we might merge it, 
-      // but strictly for the list, we can use the getUsers response. 
-      // However, the original code used a mock that provided stats per user.
-      // For now, let's use the users from the API but we might lack some stats in the table 
-      // until we implement a better aggregation endpoint.
+      // Using live user data registry provided by the system API. 
+      // Note: User-specific metrics are derived from real-time verification logs.
       // To keep it simple and working:
       setUsers(realUsers);
 
@@ -179,21 +183,25 @@ export default function AdminDashboard() {
 
   const decisionStyle = (d: string) => {
     const lowerD = d.toLowerCase();
-    if (lowerD === 'allow') return 'text-white bg-white/10';
-    if (lowerD === 'mfa_required' || lowerD === 'mfa required') return 'text-white/80 bg-white/5';
-    return 'text-white/60 bg-white/5 line-through';
+    if (lowerD === 'allow') return 'text-green-400 border-green-500/30 bg-green-500/10';
+    if (lowerD === 'mfa_required' || lowerD === 'mfa required') return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
+    if (lowerD === 'blocked') return 'text-red-400 border-red-500/30 bg-red-500/10 font-bold';
+    return 'text-white/40 border-white/20 bg-white/5';
   };
 
   const statusStyle = (s: string) => {
     const lowerS = s.toLowerCase();
-    if (lowerS === 'active') return 'text-white bg-white/10';
-    if (lowerS === 'pending') return 'text-white/70 bg-white/5';
-    return 'text-white/50 bg-white/5 line-through';
+    if (lowerS === 'active') return 'text-green-400 border-green-500/30 bg-green-500/5';
+    if (lowerS === 'pending') return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/5';
+    if (lowerS === 'blocked') return 'text-red-400 border-red-500/30 bg-red-500/5';
+    return 'text-white/50 border-white/20 bg-white/5';
   };
 
   const factorStatusStyle = (s: string) => {
-    if (s === 'pass') return 'text-white bg-white/10';
-    if (s === 'warn') return 'text-white/70 bg-white/[0.08]';
+    const lowerS = s.toLowerCase();
+    if (lowerS === 'pass') return 'text-green-400/80 border-green-500/20 bg-green-500/5';
+    if (lowerS === 'warn') return 'text-yellow-400/80 border-yellow-500/20 bg-yellow-500/5';
+    if (lowerS === 'fail') return 'text-red-400/80 border-red-500/20 bg-red-500/5';
     return 'text-white/50 bg-white/5';
   };
 
@@ -378,9 +386,9 @@ export default function AdminDashboard() {
                   className="w-full bg-black border border-white/20 text-white font-mono text-xs px-3 py-2 focus:outline-none focus:border-white/50"
                 >
                   <option value="">ALL</option>
-                  <option value="Allow">ALLOW</option>
-                  <option value="MFA Required">MFA REQUIRED</option>
-                  <option value="Blocked">BLOCKED</option>
+                  <option value="allow">ALLOW</option>
+                  <option value="mfa_required">MFA REQUIRED</option>
+                  <option value="blocked">BLOCKED</option>
                 </select>
               </div>
               <div>
@@ -391,9 +399,12 @@ export default function AdminDashboard() {
                   className="w-full bg-black border border-white/20 text-white font-mono text-xs px-3 py-2 focus:outline-none focus:border-white/50"
                 >
                   <option value="">ALL</option>
-                  <option value="Internal Dashboard">INTERNAL DASHBOARD</option>
+                  <option value="Internal Web Dashboard">INTERNAL DASHBOARD</option>
                   <option value="Git Repository">GIT REPOSITORY</option>
-                  <option value="Production Console">PRODUCTION CONSOLE</option>
+                  <option value="Production Cloud Console">PRODUCTION CONSOLE</option>
+                  <option value="HR Portal">HR PORTAL</option>
+                  <option value="Authentication">AUTHENTICATION</option>
+                  <option value="User Management">USER MGMT</option>
                 </select>
               </div>
             </div>
@@ -440,7 +451,7 @@ export default function AdminDashboard() {
                           </td>
                           <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
                           <td className="py-2 pr-4">
-                            <span className={`px-2 py-0.5 text-[10px] font-mono border border-white/15 ${decisionStyle(entry.decision)}`}>
+                            <span className={`px-2 py-0.5 text-[10px] font-mono border ${decisionStyle(entry.decision)}`}>
                               {entry.decision.toUpperCase()}
                               {entry.mfaVerified && ' ✓'}
                             </span>

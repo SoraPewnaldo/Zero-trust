@@ -108,12 +108,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Credentials hint */}
-          <div className="mt-8 border border-white/10 px-3 py-2">
-            <p className="text-[9px] font-mono text-white/30 mb-1">TEST CREDENTIALS</p>
-            <p className="text-[10px] font-mono text-white/40">admin / admin — ADMIN ROLE</p>
-            <p className="text-[10px] font-mono text-white/40">employee / employee — EMPLOYEE ROLE</p>
-          </div>
+
 
           {/* Bottom decorative */}
           <div className="flex items-center gap-2 mt-6 opacity-40">
