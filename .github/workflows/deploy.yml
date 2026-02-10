@@ -145,36 +145,4 @@ jobs:
           sleep 30
           curl -f ${{ secrets.DEPLOY_URL }}/health || exit 1
       
-      - name: Notify deployment success
-        uses: 8398a7/action-slack@v3
-        if: success()
-        with:
-          status: custom
-          custom_payload: |
-            {
-              text: "✅ SoraIAM deployed successfully to production!",
-              attachments: [{
-                color: 'good',
-                text: `Commit: ${{ github.sha }}\nAuthor: ${{ github.actor }}`
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-        continue-on-error: true
-      
-      - name: Notify deployment failure
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: custom
-          custom_payload: |
-            {
-              text: "❌ SoraIAM deployment failed!",
-              attachments: [{
-                color: 'danger',
-                text: `Commit: ${{ github.sha }}\nAuthor: ${{ github.actor }}`
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-        continue-on-error: true
+
