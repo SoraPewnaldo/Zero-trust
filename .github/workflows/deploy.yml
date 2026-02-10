@@ -145,7 +145,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_SSH_KEY }}
-          envs: JWT_SECRET
+          envs: JWT_SECRET,CORS_ORIGIN
           script: |
             cd /opt/soraiam
             docker compose -f docker-compose.prod.yml pull
