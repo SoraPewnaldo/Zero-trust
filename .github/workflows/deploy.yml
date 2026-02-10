@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Copy files to server
-        if: env.DEPLOY_HOST != ''
+        if: secrets.DEPLOY_HOST != ''
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -132,7 +132,7 @@ jobs:
           target: "/opt/soraiam"
 
       - name: Deploy to server via SSH
-        if: env.DEPLOY_HOST != ''
+        if: secrets.DEPLOY_HOST != ''
         uses: appleboy/ssh-action@v1.0.0
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -142,9 +142,9 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/soraiam
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
-            docker-compose -f docker-compose.prod.yml exec -T backend npm run init-db
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
             docker system prune -f
       
       - name: Health check
