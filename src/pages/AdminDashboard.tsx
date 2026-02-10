@@ -3,6 +3,7 @@ import { ScanResult, DashboardStats, UserSummary, UserDetail } from '@/lib/types
 import { api } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import EmployeeForm from '@/components/admin/EmployeeForm';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock, Plus, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; userId: string | null }>({ show: false, userId: null });
 
   const fetchData = async () => {
     setLoading(true);
@@ -228,10 +230,15 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to fire/delete this employee? This action cannot be undone.')) return;
+    setConfirmDelete({ show: true, userId });
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!confirmDelete.userId) return;
 
     try {
-      await api.admin.deleteUser(userId);
+      await api.admin.deleteUser(confirmDelete.userId);
+      setConfirmDelete({ show: false, userId: null });
       // Refresh list
       fetchData();
     } catch (error) {
@@ -1059,6 +1066,17 @@ export default function AdminDashboard() {
           api={api}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={confirmDelete.show}
+        title="CONFIRM TERMINATION"
+        message="Are you sure you want to fire/delete this employee? This action cannot be undone."
+        confirmText="FIRE EMPLOYEE"
+        cancelText="CANCEL"
+        variant="danger"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setConfirmDelete({ show: false, userId: null })}
+      />
     </DashboardLayout>
   );
 }
