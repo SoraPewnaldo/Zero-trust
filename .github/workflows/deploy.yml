@@ -146,10 +146,18 @@ jobs:
           key: ${{ env.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/soraiam
+            echo "Listing files:"
+            ls -al
+            echo "Content of nginx.conf:"
+            cat nginx.conf
+            
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
             docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
             docker system prune -f
+            
+            echo "Frontend logs:"
+            docker compose -f docker-compose.prod.yml logs frontend
       
       - name: Health check
         if: env.DEPLOY_HOST != ''
