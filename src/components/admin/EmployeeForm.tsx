@@ -71,7 +71,7 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-[#0A0A0A] border border-white/20 w-full max-w-lg shadow-2xl relative">
+            <div className="bg-[#0A0A0A] border border-white/20 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
@@ -93,7 +93,7 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[10px] font-mono text-white/40 mb-1 tracking-wider uppercase">First Name</label>
                             <div className="relative">
@@ -156,7 +156,7 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[10px] font-mono text-white/40 mb-1 tracking-wider uppercase">Department</label>
                             <div className="relative">
@@ -194,7 +194,7 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[10px] font-mono text-white/40 mb-1 tracking-wider uppercase">Password</label>
                             <div className="relative">

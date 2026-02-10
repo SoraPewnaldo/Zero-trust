@@ -84,6 +84,10 @@ export default function EmployeeDashboard() {
     loadData();
   }, [loadData]);
 
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+
   const handleScan = async () => {
     if (!user || !selectedResourceId) return;
     setScanning(true);
@@ -100,18 +104,25 @@ export default function EmployeeDashboard() {
     }
   };
 
-  const handleMfaVerify = async () => {
-    if (!latestScan) return;
-    const mfaCode = prompt('Enter 6-digit MFA code:');
-    if (!mfaCode) return;
+  const handleMfaVerify = () => {
+    setMfaCode('');
+    setMfaError('');
+    setMfaModalOpen(true);
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!latestScan || !mfaCode) return;
 
     setVerifying(true);
+    setMfaError('');
     try {
       await api.verification.verifyMFA(latestScan.id, mfaCode);
       await loadData();
+      setMfaModalOpen(false);
     } catch (error) {
       console.error('MFA verification failed', error);
-      alert('Invalid MFA code');
+      setMfaError('Invalid authentication code. Please try again.');
     } finally {
       setVerifying(false);
     }
@@ -369,34 +380,120 @@ export default function EmployeeDashboard() {
         ) : history.length === 0 ? (
           <div className="text-xs font-mono text-white/30">NO SECURITY EVENTS RECORDED</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/20">
-                  <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">TIMESTAMP</th>
-                  <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">RESOURCE</th>
-                  <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">SCORE</th>
-                  <th className="text-[9px] font-mono text-white/40 py-2 uppercase">DECISION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((entry) => (
-                  <tr key={entry.id} className="border-b border-white/5">
-                    <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
-                    <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource}</td>
-                    <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
-                    <td className="py-2">
-                      <span className={`px-2 py-0.5 text-[9px] font-mono border ${decisionStyle(entry.decision)}`}>
-                        {entry.decision?.toUpperCase()}
-                      </span>
-                    </td>
+          <>
+            {/* Desktop Table */}
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">TIMESTAMP</th>
+                    <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">RESOURCE</th>
+                    <th className="text-[9px] font-mono text-white/40 py-2 pr-4 uppercase">SCORE</th>
+                    <th className="text-[9px] font-mono text-white/40 py-2 uppercase">DECISION</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {history.map((entry) => (
+                    <tr key={entry.id} className="border-b border-white/5">
+                      <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
+                      <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource}</td>
+                      <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
+                      <td className="py-2">
+                        <span className={`px-2 py-0.5 text-[9px] font-mono border ${decisionStyle(entry.decision)}`}>
+                          {entry.decision?.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card Layout */}
+            <div className="md:hidden space-y-3">
+              {history.map((entry) => (
+                <div key={entry.id} className="border border-white/10 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-white/60">{entry.resource}</span>
+                    <span className={`px-2 py-0.5 text-[9px] font-mono border ${decisionStyle(entry.decision)}`}>
+                      {entry.decision?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50">
+                    <span>SCORE: <span className="text-white/80">{entry.trustScore}</span></span>
+                    <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {/* MFA Modal */}
+      {mfaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-black border border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.1)] relative">
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/50"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/50"></div>
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-white/50"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/50"></div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 border border-white/10 bg-white/5">
+                  <Key size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-mono font-bold text-white tracking-wider">STEP-UP AUTHENTICATION</h3>
+                  <p className="text-[10px] font-mono text-white/50">ENTER YOUR 6-DIGIT MFA TOKEN</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleMfaSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono text-white/40 block">AUTHENTICATOR CODE</label>
+                  <input
+                    type="text"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10"
+                    autoFocus
+                  />
+                  <p className="text-[9px] font-mono text-white/30 text-center pt-2">
+                    USE TEST CODE: <span className="text-white/60">123456</span>
+                  </p>
+                </div>
+
+                {mfaError && (
+                  <div className="flex items-center gap-2 text-red-400 bg-red-500/10 p-2 border border-red-500/20 justify-center">
+                    <AlertTriangle size={12} />
+                    <span className="text-[10px] font-mono">{mfaError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setMfaModalOpen(false)}
+                    className="py-3 border border-white/10 text-[10px] font-mono text-white/60 hover:bg-white/5 transition-colors"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={verifying || mfaCode.length !== 6}
+                    className="py-3 bg-white text-black text-[10px] font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {verifying ? 'VERIFYING...' : 'CONFIRM ACCESS'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -106,7 +106,7 @@ export default function AdminDashboard() {
 
       // Map users (handled by existing logic mostly, but ensured)
       // The users state expects UserSummary[], api.admin.getUsers returns { users: [...] }
-      const realUsers = (usersList.users || []).map((u: {
+      const realUsers = usersList.map((u: {
         _id: string;
         username: string;
         role: string;
@@ -183,8 +183,35 @@ export default function AdminDashboard() {
         recommendations: data.recommendations,
         logs: data.scans.map((scan: {
           factors?: Array<{ details?: string; detail?: string }>;
+          deviceId?: { deviceName: string } | string;
+          context?: { ipAddress?: string; geolocation?: { city?: string } };
+          userId?: { _id: string; username: string; role: string } | string;
+          resourceId?: { name: string };
+          resource?: string;
+          trustScore: number;
+          decision: string;
+          createdAt: string;
+          timestamp: string;
+          mfaVerified: boolean;
         }) => ({
-          ...scan,
+          id: (scan as any)._id,
+          userId: (typeof scan.userId === 'object' && scan.userId ? scan.userId._id : scan.userId?.toString()) || 'unknown',
+          username: (typeof scan.userId === 'object' && scan.userId ? scan.userId.username : (scan as any).username) || 'Unknown',
+          role: (typeof scan.userId === 'object' && scan.userId ? scan.userId.role : (scan as any).role) || 'unknown',
+          deviceId: (typeof scan.deviceId === 'object' && scan.deviceId ? scan.deviceId.deviceName : scan.deviceId?.toString()) || 'Unknown',
+          trustScore: scan.trustScore,
+          decision: scan.decision,
+          timestamp: scan.createdAt || scan.timestamp,
+          deviceInfo: {
+            os: 'Unknown',
+            browser: 'Unknown',
+            ip: scan.context?.ipAddress || 'Unknown',
+            location: scan.context?.geolocation?.city || 'Unknown',
+            lastSeen: scan.createdAt
+          },
+          resource: scan.resourceId?.name || scan.resource || 'Unknown',
+          context: scan.context,
+          mfaVerified: scan.mfaVerified,
           factors: (scan.factors || []).map((f) => ({
             ...f,
             detail: f.details || f.detail
@@ -268,7 +295,7 @@ export default function AdminDashboard() {
     <DashboardLayout title="ADMIN DASHBOARD" subtitle="ORGANIZATION ACCESS MANAGEMENT">
       {/* Summary Stat Cards */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <div className="border border-white/20 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Activity size={14} className="text-white/50" />
@@ -456,73 +483,118 @@ export default function AdminDashboard() {
             ) : logs.length === 0 ? (
               <div className="text-xs font-mono text-white/30">NO RECORDS MATCH FILTERS</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-white/20">
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">TIMESTAMP</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">USER</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">RESOURCE</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DEVICE</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">CONTEXT</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">SCORE</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DECISION</th>
-                      <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DETAILS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.map(entry => (
-                      <>
-                        <tr key={entry.id} className="border-b border-white/5">
-                          <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
-                          <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.username}</td>
-                          <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource ?? '—'}</td>
-                          <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.deviceId}</td>
-                          <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">
-                            {entry.context ? `${entry.context.deviceType} / ${entry.context.networkType}` : '—'}
-                          </td>
-                          <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
-                          <td className="py-2 pr-4">
-                            <span className={`px-2 py-0.5 text-[10px] font-mono border ${decisionStyle(entry.decision)}`}>
-                              {entry.decision.toUpperCase()}
-                              {entry.mfaVerified && ' ✓'}
-                            </span>
-                          </td>
-                          <td className="py-2">
-                            {entry.factors && entry.factors.length > 0 && (
-                              <button
-                                onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
-                                className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors"
-                              >
-                                {expandedLog === entry.id ? 'HIDE' : 'FACTORS'}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                        {expandedLog === entry.id && entry.factors && (
-                          <tr key={`${entry.id}-factors`}>
-                            <td colSpan={8} className="py-2 px-4">
-                              <div className="border border-white/10 p-3 space-y-1.5">
-                                {entry.factors.map((f, idx) => (
-                                  <div key={idx} className="flex items-center gap-3 text-[10px] font-mono">
-                                    <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
-                                    <span className="text-white/70 w-36">{f.name}</span>
-                                    <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
-                                    <span className="text-white/40 flex-1">{f.detail}</span>
-                                    <span className={`${f.impact >= 0 ? 'text-white/60' : 'text-white/40'}`}>
-                                      {f.impact >= 0 ? '+' : ''}{f.impact}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
+              <>
+                {/* Desktop Table */}
+                <div className="overflow-x-auto hidden md:block">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">TIMESTAMP</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">USER</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">RESOURCE</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DEVICE</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">CONTEXT</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">SCORE</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DECISION</th>
+                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DETAILS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map(entry => (
+                        <>
+                          <tr key={entry.id} className="border-b border-white/5">
+                            <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
+                            <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.username}</td>
+                            <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource ?? '—'}</td>
+                            <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.deviceId}</td>
+                            <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">
+                              {entry.context ? `${entry.context.deviceType} / ${entry.context.networkType}` : '—'}
+                            </td>
+                            <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
+                            <td className="py-2 pr-4">
+                              <span className={`px-2 py-0.5 text-[10px] font-mono border ${decisionStyle(entry.decision)}`}>
+                                {entry.decision.toUpperCase()}
+                                {entry.mfaVerified && ' ✓'}
+                              </span>
+                            </td>
+                            <td className="py-2">
+                              {entry.factors && entry.factors.length > 0 && (
+                                <button
+                                  onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
+                                  className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors"
+                                >
+                                  {expandedLog === entry.id ? 'HIDE' : 'FACTORS'}
+                                </button>
+                              )}
                             </td>
                           </tr>
-                        )}
-                      </>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          {expandedLog === entry.id && entry.factors && (
+                            <tr key={`${entry.id}-factors`}>
+                              <td colSpan={8} className="py-2 px-4">
+                                <div className="border border-white/10 p-3 space-y-1.5">
+                                  {entry.factors.map((f, idx) => (
+                                    <div key={idx} className="flex items-center gap-3 text-[10px] font-mono">
+                                      <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+                                      <span className="text-white/70 w-36">{f.name}</span>
+                                      <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
+                                      <span className="text-white/40 flex-1">{f.detail}</span>
+                                      <span className={`${f.impact >= 0 ? 'text-white/60' : 'text-white/40'}`}>
+                                        {f.impact >= 0 ? '+' : ''}{f.impact}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-3">
+                  {logs.map(entry => (
+                    <div key={entry.id} className="border border-white/10 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono text-white/80 font-bold">{entry.username}</span>
+                        <span className={`px-2 py-0.5 text-[9px] font-mono border ${decisionStyle(entry.decision)}`}>
+                          {entry.decision.toUpperCase()}{entry.mfaVerified && ' ✓'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] font-mono text-white/50">
+                        <span>SCORE: <span className="text-white/80">{entry.trustScore}</span></span>
+                        <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                      </div>
+                      <div className="text-[10px] font-mono text-white/40">
+                        {entry.resource ?? '—'} • {entry.deviceId}
+                      </div>
+                      {entry.factors && entry.factors.length > 0 && (
+                        <button
+                          onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
+                          className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors w-full text-center"
+                        >
+                          {expandedLog === entry.id ? 'HIDE FACTORS' : 'SHOW FACTORS'}
+                        </button>
+                      )}
+                      {expandedLog === entry.id && entry.factors && (
+                        <div className="border-t border-white/10 pt-2 space-y-1">
+                          {entry.factors.map((f, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-[10px] font-mono">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+                                <span className="text-white/70">{f.name}</span>
+                              </div>
+                              <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </>
@@ -546,7 +618,7 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-white/20">
@@ -601,6 +673,41 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3">
+            {users.map(u => (
+              <div key={u.userId} className="border border-white/10 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-white/80 font-bold">{u.username}</span>
+                  <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${statusStyle(u.status)}`}>
+                    {u.status.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] font-mono text-white/50">
+                  <span className="uppercase">{u.role}</span>
+                  <span>•</span>
+                  <span>SCANS: {u.totalScans}</span>
+                  <span>•</span>
+                  <span>AVG: {u.avgScore}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => handleViewUser(u.userId)}
+                    className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-3 py-1 transition-colors hover:border-white/40 flex-1 text-center min-h-[36px] flex items-center justify-center"
+                  >
+                    VIEW
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(u.userId)}
+                    className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-3 py-1 transition-colors hover:border-red-500/40 flex items-center justify-center gap-1 min-h-[36px]"
+                  >
+                    <Trash2 size={10} /> FIRE
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -642,7 +749,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {[
                 { label: 'TOTAL SCANS', value: selectedUser.stats.totalScans },
                 { label: 'AVG SCORE', value: selectedUser.stats.avgScore },
@@ -725,7 +832,8 @@ export default function AdminDashboard() {
               <div className="flex-1 h-px bg-white/10"></div>
               <span className="text-[10px] font-mono text-white/30">{selectedUser.logs.length} RECORDS</span>
             </div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-white/20">
@@ -789,6 +897,48 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card Layout */}
+            <div className="md:hidden space-y-3">
+              {selectedUser.logs.map(entry => (
+                <div key={entry.id} className="border border-white/10 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-white/60">{entry.resource ?? '—'}</span>
+                    <span className={`px-2 py-0.5 text-[9px] font-mono border border-white/15 ${decisionStyle(entry.decision)}`}>
+                      {entry.decision.toUpperCase()}{entry.mfaVerified && ' ✓'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50">
+                    <span>SCORE: <span className="text-white/80">{entry.trustScore}</span></span>
+                    <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                  </div>
+                  <div className="text-[10px] font-mono text-white/40">
+                    {entry.deviceId}
+                  </div>
+                  {entry.factors && entry.factors.length > 0 && (
+                    <button
+                      onClick={() => setExpandedLog(expandedLog === entry.id ? null : entry.id)}
+                      className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors w-full text-center"
+                    >
+                      {expandedLog === entry.id ? 'HIDE FACTORS' : 'SHOW FACTORS'}
+                    </button>
+                  )}
+                  {expandedLog === entry.id && entry.factors && (
+                    <div className="border-t border-white/10 pt-2 space-y-1">
+                      {entry.factors.map((f, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-[10px] font-mono">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 shrink-0 ${f.status === 'pass' ? 'bg-white/80' : f.status === 'warn' ? 'bg-white/40' : 'bg-white/20'}`}></div>
+                            <span className="text-white/70">{f.name}</span>
+                          </div>
+                          <span className={`px-1.5 py-0.5 border border-white/10 ${factorStatusStyle(f.status)}`}>{f.status.toUpperCase()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
