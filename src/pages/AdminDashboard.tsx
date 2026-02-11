@@ -34,9 +34,18 @@ export default function AdminDashboard() {
           role: filterRole ? filterRole.toLowerCase() : undefined,
           resource: filterResource ? filterResource.toLowerCase() : undefined,
           username: filterUser ? filterUser : undefined
+        }).catch(err => {
+          console.error('Failed to fetch scan logs', err);
+          return { scans: [], pagination: { total: 0 } };
         }),
-        api.admin.getDashboardStats(),
-        api.admin.getUsers().catch(() => ({ users: [] }))
+        api.admin.getDashboardStats().catch(err => {
+          console.error('Failed to fetch dashboard stats', err);
+          return { totalScans: 0, avgTrustScore: 0, allowedScans: 0, mfaRequiredScans: 0, blockedScans: 0 };
+        }),
+        api.admin.getUsers().catch(err => {
+          console.error('Failed to fetch users', err);
+          return { users: [] };
+        })
       ]);
 
       const usersList = usersResponse?.users || [];
