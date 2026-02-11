@@ -7,8 +7,8 @@ services:
     container_name: soraiam-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-admin123}
       MONGO_INITDB_DATABASE: soraiam
     ports:
       - "27017:27017"
@@ -18,7 +18,7 @@ services:
     networks:
       - soraiam-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/soraiam --quiet
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,19 +26,17 @@ services:
 
   # Backend API
   backend:
-    image: ghcr.io/sorapewnaldo/zero-trust/backend:main
+    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/backend:main
     container_name: soraiam-backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 3001
-      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/soraiam?authSource=admin
+      MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin123}@mongodb:27017/soraiam?authSource=admin
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h
-      CORS_ORIGIN: http://13.201.225.180,http://localhost,http://127.0.0.1
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
       TRUST_ENGINE_URL: http://trust-engine:5000/scan
-    ports:
-      - "3001:3001"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -53,11 +51,9 @@ services:
 
   # Python Trust Engine (PDP)
   trust-engine:
-    image: ghcr.io/sorapewnaldo/zero-trust/trust-engine:main
+    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/trust-engine:main
     container_name: soraiam-trust-engine
     restart: unless-stopped
-    ports:
-      - "5000:5000"
     networks:
       - soraiam-network
     healthcheck:
@@ -67,9 +63,9 @@ services:
       retries: 3
       start_period: 10s
 
-  # Frontend
+  # Frontend (Nginx)
   frontend:
-    image: ghcr.io/sorapewnaldo/zero-trust/frontend:main
+    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/frontend:main
     container_name: soraiam-frontend
     restart: unless-stopped
     ports:
@@ -79,7 +75,7 @@ services:
     networks:
       - soraiam-network
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 30s
@@ -93,6 +89,4 @@ networks:
 
 volumes:
   mongodb_data:
-    driver: local
   mongodb_config:
-    driver: local
