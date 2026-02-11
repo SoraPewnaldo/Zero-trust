@@ -3,8 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches: [ deployement ]
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -12,9 +11,7 @@ env:
   IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
   IMAGE_NAME_TRUST_ENGINE: ${{ github.repository }}/trust-engine
 
-
 jobs:
-  # Build and Push Docker Images
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
@@ -29,138 +26,95 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      - name: Log in to Container Registry
+      - name: Log in to Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Extract metadata for backend
+      - name: Backend Metadata
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+          tags: type=raw,value=main
       
-      - name: Build and push backend image
+      - name: Build and Push Backend
         uses: docker/build-push-action@v5
         with:
           context: ./server
-          file: ./server/Dockerfile
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-
-      
-      - name: Extract metadata for trust-engine
+      - name: Trust Engine Metadata
         id: meta-trust-engine
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TRUST_ENGINE }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+          tags: type=raw,value=main
       
-      - name: Build and push trust-engine image
+      - name: Build and Push Trust Engine
         uses: docker/build-push-action@v5
         with:
           context: ./trust_engine
-          file: ./trust_engine/Dockerfile
           push: true
           tags: ${{ steps.meta-trust-engine.outputs.tags }}
           labels: ${{ steps.meta-trust-engine.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Extract metadata for frontend
+      - name: Frontend Metadata
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+          tags: type=raw,value=main
       
-      - name: Build and push frontend image
+      - name: Build and Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Deploy to Production (Example with Docker Compose)
   deploy:
-    name: Deploy to Production
+    name: Deploy to VPS
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     needs: build-and-push
-    if: github.ref == 'refs/heads/deployement'
-    environment: 
-      name: production
-      # url: ${{ steps.deploy.outputs.url }} # deploy step output not yet available here without id
+    timeout-minutes: 10
     
-    env:
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Copy files to server
-        if: env.DEPLOY_HOST != ''
+      - name: Copy Configs
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ env.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "docker-compose.prod.yml,nginx.conf"
           target: "soraiam"
-          debug: true
-
-      - name: Deploy to server via SSH
-        if: env.DEPLOY_HOST != ''
+      
+      - name: SSH Command
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ env.DEPLOY_SSH_KEY }}
-          envs: JWT_SECRET,CORS_ORIGIN
-          debug: true
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: JWT_SECRET,GITHUB_REPOSITORY
           script: |
-            mkdir -p ~/soraiam
             cd ~/soraiam
+            export GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
+            echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
             docker system prune -f
-      
-      - name: Health check
-        if: env.DEPLOY_HOST != ''
-        run: |
-          sleep 30
-          curl -f ${{ env.DEPLOY_URL }}/health || exit 1
-      
-
