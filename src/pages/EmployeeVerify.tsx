@@ -277,8 +277,8 @@ export default function EmployeeVerify() {
                     className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10"
                     autoFocus
                   />
-                  <p className="text-[9px] font-mono text-white/30 text-center pt-2">
-                    USE TEST CODE: <span className="text-white/60">123456</span>
+                  <p className="text-xs font-mono text-yellow-500 font-bold text-center pt-2 animate-pulse">
+                    USE TEST CODE: 123456
                   </p>
                 </div>
 
