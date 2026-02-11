@@ -111,6 +111,7 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build-and-push
     if: github.ref == 'refs/heads/deployement'
     environment: 
@@ -136,7 +137,8 @@ jobs:
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_SSH_KEY }}
           source: "docker-compose.prod.yml,nginx.conf"
-          target: "/opt/soraiam"
+          target: "soraiam"
+          debug: true
 
       - name: Deploy to server via SSH
         if: env.DEPLOY_HOST != ''
@@ -146,8 +148,10 @@ jobs:
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_SSH_KEY }}
           envs: JWT_SECRET,CORS_ORIGIN
+          debug: true
           script: |
-            cd /opt/soraiam
+            mkdir -p ~/soraiam
+            cd ~/soraiam
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
             docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
