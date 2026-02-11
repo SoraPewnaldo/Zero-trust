@@ -7,9 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
-  IMAGE_NAME_TRUST_ENGINE: ${{ github.repository }}/trust-engine
 
 jobs:
   build-and-push:
@@ -22,6 +19,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Lowercase Repo
+        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,7 +37,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend
           tags: type=raw,value=main
       
       - name: Build and Push Backend
@@ -54,7 +54,7 @@ jobs:
         id: meta-trust-engine
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TRUST_ENGINE }}
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/trust-engine
           tags: type=raw,value=main
       
       - name: Build and Push Trust Engine
@@ -71,7 +71,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend
           tags: type=raw,value=main
       
       - name: Build and Push Frontend
@@ -94,6 +94,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Lowercase Repo
+        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       
       - name: Copy Configs
         uses: appleboy/scp-action@v0.1.7
@@ -110,10 +113,10 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: JWT_SECRET,GITHUB_REPOSITORY
+          envs: JWT_SECRET,REPO_LOWER
           script: |
             cd ~/soraiam
-            export GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+            export GITHUB_REPOSITORY=$REPO_LOWER
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
             echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
             docker compose -f docker-compose.prod.yml pull
