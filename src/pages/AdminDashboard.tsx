@@ -205,11 +205,11 @@ export default function AdminDashboard() {
           timestamp: string;
           mfaVerified: boolean;
         }) => ({
-          id: (scan as any)._id,
-          userId: (typeof scan.userId === 'object' && scan.userId ? scan.userId._id : scan.userId?.toString()) || 'unknown',
-          username: (typeof scan.userId === 'object' && scan.userId ? scan.userId.username : (scan as any).username) || 'Unknown',
-          role: (typeof scan.userId === 'object' && scan.userId ? scan.userId.role : (scan as any).role) || 'unknown',
-          deviceId: (typeof scan.deviceId === 'object' && scan.deviceId ? scan.deviceId.deviceName : scan.deviceId?.toString()) || 'Unknown',
+          id: (scan as { _id?: string })._id || 'unknown',
+          userId: (typeof scan.userId === 'object' && scan.userId && '_id' in scan.userId ? (scan.userId as { _id: string })._id : (typeof scan.userId === 'string' ? scan.userId : 'unknown')),
+          username: (typeof scan.userId === 'object' && scan.userId && 'username' in scan.userId ? (scan.userId as { username: string }).username : ((scan as { username?: string }).username || 'Unknown')),
+          role: (typeof scan.userId === 'object' && scan.userId && 'role' in scan.userId ? (scan.userId as { role: string }).role : ((scan as { role?: string }).role || 'unknown')),
+          deviceId: (typeof scan.deviceId === 'object' && scan.deviceId && 'deviceName' in scan.deviceId ? (scan.deviceId as { deviceName: string }).deviceName : (typeof scan.deviceId === 'string' ? scan.deviceId : 'Unknown')),
           trustScore: scan.trustScore,
           decision: scan.decision,
           timestamp: scan.createdAt || scan.timestamp,
