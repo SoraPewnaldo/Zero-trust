@@ -121,4 +121,8 @@ jobs:
             echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
+            echo "Waiting for backend to stabilize..."
+            sleep 10
+            echo "Running database initialization..."
+            docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
             docker system prune -f
