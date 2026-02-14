@@ -124,5 +124,5 @@ jobs:
             echo "Waiting for backend to stabilize..."
             sleep 10
             echo "Running database initialization..."
-            docker compose -f docker-compose.prod.yml exec -T backend npm run init-db
+            docker compose -f docker-compose.prod.yml exec -T backend npm run init-db:prod
             docker system prune -f
