@@ -194,10 +194,10 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         if (scans.length > 0) {
             console.log('DEBUG: Scans content detail:', JSON.stringify(scans.map(s => ({
                 id: s._id,
-                user: (s.userId && typeof s.userId === 'object' ? (s.userId as any).username : (s.userId || 'Unknown')),
+                user: (s.userId && typeof s.userId === 'object' && 'username' in s.userId ? (s.userId as unknown as { username: string }).username : (s.userId || 'Unknown')),
                 score: s.trustScore,
                 decision: s.decision,
-                resource: (s.resourceId && typeof s.resourceId === 'object' ? (s.resourceId as any).name : 'Unknown')
+                resource: (s.resourceId && typeof s.resourceId === 'object' && 'name' in s.resourceId ? (s.resourceId as unknown as { name: string }).name : 'Unknown')
             }))));
         }
 
