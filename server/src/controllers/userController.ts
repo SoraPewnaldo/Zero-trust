@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { Device } from '../models/Device.js';
-import { Resource } from '../models/Resource.js';
 
 /**
  * Get user's scan history

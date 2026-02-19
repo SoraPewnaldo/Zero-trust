@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { AuthRequest } from '../middleware/auth.js';
 import { Device } from '../models/Device.js';
-import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
@@ -11,7 +10,7 @@ import { IDecisionFactor } from '../models/ScanResult.js';
 
 // --- GATEKEEPER DECISION LOGIC (NODE.JS) ---
 // EXACT implementation of User's requested logic
-function decideAccess(score: number, resourceName: string): 'allow' | 'blocked' | 'mfa_required' {
+function _decideAccess(score: number, resourceName: string): 'allow' | 'blocked' | 'mfa_required' {
     // Exact mapping from User request:
     // if (resource === "PROD_CLOUD" && score < 80) return "BLOCKED";
     // if (score >= 80) return "ALLOW";
@@ -207,7 +206,7 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
 
         // Create scan result
         const scanId = uuidv4();
-        const scanResult = await ScanResult.create({
+        await ScanResult.create({
             scanId,
             userId,
             deviceId: device._id,
