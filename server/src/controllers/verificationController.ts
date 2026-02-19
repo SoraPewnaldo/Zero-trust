@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { AuthRequest } from '../middleware/auth.js';
 import { Device } from '../models/Device.js';
+import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
