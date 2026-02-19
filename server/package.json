@@ -12,7 +12,7 @@
         "init-db:prod": "node dist/scripts/initDb.js",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "eslint src"
+        "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src -c .eslintrc.cjs"
     },
     "keywords": [
         "zero-trust",
