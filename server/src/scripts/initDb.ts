@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { connectDatabase, disconnectDatabase } from '../config/database.js';
 import { User } from '../models/User.js';

@@ -4,7 +4,7 @@ export const errorHandler = (
     err: { statusCode?: number; message?: string; stack?: string },
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
 ): void => {
     console.error('Error:', err);
 
