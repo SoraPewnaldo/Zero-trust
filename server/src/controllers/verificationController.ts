@@ -8,22 +8,6 @@ import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
 import { IDecisionFactor } from '../models/ScanResult.js';
 
-// --- GATEKEEPER DECISION LOGIC (NODE.JS) ---
-// EXACT implementation of User's requested logic
-function _decideAccess(score: number, resourceName: string): 'allow' | 'blocked' | 'mfa_required' {
-    // Exact mapping from User request:
-    // if (resource === "PROD_CLOUD" && score < 80) return "BLOCKED";
-    // if (score >= 80) return "ALLOW";
-    // if (score >= 60) return "MFA_REQUIRED";
-    // return "BLOCKED";
-
-    // Adapted to use internal lowercase enums
-    if (resourceName === 'Production Console' && score < 80) return 'blocked';
-
-    if (score >= 80) return 'allow';
-    if (score >= 60) return 'mfa_required';
-    return 'blocked';
-}
 
 /**
  * Initiate trust scan
