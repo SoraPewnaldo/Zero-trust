@@ -35,7 +35,7 @@ services:
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/soraiam?authSource=admin
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h
-      CORS_ORIGIN: http://13.201.225.180,http://localhost,http://127.0.0.1
+      CORS_ORIGIN: http://15.207.15.101,http://yourdomain.com,http://localhost,http://127.0.0.1
       TRUST_ENGINE_URL: http://trust-engine:5000/scan
     ports:
       - "3001:3001"
