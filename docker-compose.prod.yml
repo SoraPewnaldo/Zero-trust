@@ -18,7 +18,7 @@ services:
     networks:
       - soraiam-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
       MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin123}@mongodb:27017/soraiam?authSource=admin
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: http://15.207.15.101,http://sorapew.tech,http://localhost,http://127.0.0.1
       TRUST_ENGINE_URL: http://trust-engine:5000/scan
     depends_on:
       mongodb:
