@@ -165,7 +165,7 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
 
         // Create scan result
         const scanId = uuidv4();
-        const scanResult = await ScanResult.create({
+        await ScanResult.create({
             scanId,
             userId,
             deviceId: device._id,
