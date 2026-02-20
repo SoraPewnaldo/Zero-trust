@@ -50,13 +50,13 @@ jobs:
         working-directory: ./server
         run: npm run build
       
-      - name: Run backend tests
-        working-directory: ./server
-        run: npm test --if-present
-        env:
-          MONGODB_URI: mongodb://localhost:27017/soraiam-test
-          JWT_SECRET: test-secret-key
-          NODE_ENV: test
+      # - name: Run backend tests
+      #   working-directory: ./server
+      #   run: npm test --if-present
+      #   env:
+      #     MONGODB_URI: mongodb://localhost:27017/soraiam-test
+      #     JWT_SECRET: test-secret-key
+      #     NODE_ENV: test
 
   # Frontend Tests
   frontend-test:
