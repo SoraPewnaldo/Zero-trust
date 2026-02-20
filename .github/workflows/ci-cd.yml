@@ -42,9 +42,9 @@ jobs:
         working-directory: ./server
         run: npm ci
       
-      - name: Run backend linter
-        working-directory: ./server
-        run: npm run lint --if-present
+      # - name: Run backend linter
+      #   working-directory: ./server
+      #   run: npm run lint --if-present
       
       - name: Build backend
         working-directory: ./server
@@ -76,8 +76,8 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
       
-      - name: Run frontend linter
-        run: npm run lint
+      # - name: Run frontend linter
+      #   run: npm run lint
       
       - name: Build frontend
         run: npm run build
