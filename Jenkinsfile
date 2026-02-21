@@ -19,12 +19,7 @@ pipeline {
         }
 
         stage('Backend Validation (Test & Lint)') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    args '-v /root/.npm:/root/.npm'
-                }
-            }
+            agent any
             steps {
                 dir('server') {
                     sh 'npm ci'
@@ -36,12 +31,7 @@ pipeline {
         }
 
         stage('Frontend Validation (Test & Lint)') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    args '-v /root/.npm:/root/.npm'
-                }
-            }
+            agent any
             steps {
                 sh 'npm ci'
                 sh 'npm run lint'
