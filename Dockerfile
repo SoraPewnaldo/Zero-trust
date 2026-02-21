@@ -1,36 +1,17 @@
-# Frontend Dockerfile
-FROM node:18-alpine AS builder
+# Development Dockerfile for Vite Frontend
+FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Install dependencies first for better caching
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm ci
-
-# Copy source code
+# Copy source code (will be overridden by volume mount in compose, but good for standalone testing)
 COPY . .
 
-# Build for production
-RUN npm run build
+# Expose Vite's default port
+EXPOSE 5173
 
-# Production stage with nginx
-FROM nginx:alpine
-
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose port
-EXPOSE 80
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start Vite in dev mode with host exposed for Docker
+CMD ["npm", "run", "dev", "--", "--host"]

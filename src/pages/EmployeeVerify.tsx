@@ -8,12 +8,13 @@ import { Shield, Monitor, Lock, Key, CheckCircle, Laptop, Wifi } from 'lucide-re
 
 interface Resource {
   _id: string;
+  resourceId: string;
   name: string;
   sensitivity: string;
 }
 
 export default function EmployeeVerify() {
-  const { user } = useAuth();
+  const { user, verify } = useAuth();
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -75,8 +76,16 @@ export default function EmployeeVerify() {
     setVerifying(true);
     setMfaError('');
     try {
-      const updated = await api.verification.verifyMFA(scanResult.scanId, mfaCode);
-      setScanResult(updated);
+      await api.verification.verifyMFA(scanResult.scanId, mfaCode);
+      setScanResult(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          mfaVerified: true,
+          accessGranted: true,
+          decision: 'allow'
+        };
+      });
       setMfaModalOpen(false);
     } catch (error) {
       console.error('MFA verification failed', error);
@@ -129,12 +138,29 @@ export default function EmployeeVerify() {
         {isAllowed && (
           <div className="text-center mb-6">
             <button
-              onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/employee')}
+              onClick={() => {
+                // Always set verification state on success
+                verify();
+
+                const selectedResource = resources.find(r => r._id === selectedResourceId);
+                const targetId = scanResult?.resource ? selectedResource?.resourceId : null;
+
+                if (targetId === 'admin-dashboard') {
+                  navigate('/admin');
+                } else if (targetId === 'employee-dashboard') {
+                  navigate('/employee');
+                } else if (targetId) {
+                  navigate(`/resource/${targetId}`);
+                } else {
+                  // Fallback based on role
+                  navigate(user?.role === 'admin' ? '/admin' : '/employee');
+                }
+              }}
               className="relative px-8 py-3 bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 group"
             >
               <span className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
               <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              PROCEED TO DASHBOARD →
+              PROCEED TO RESOURCE →
             </button>
           </div>
         )}
@@ -277,8 +303,8 @@ export default function EmployeeVerify() {
                     className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10"
                     autoFocus
                   />
-                  <p className="text-[9px] font-mono text-white/30 text-center pt-2">
-                    USE TEST CODE: <span className="text-white/60">123456</span>
+                  <p className="text-xs font-mono text-yellow-500 font-bold text-center pt-2 animate-pulse">
+                    USE TEST CODE: 123456
                   </p>
                 </div>
 

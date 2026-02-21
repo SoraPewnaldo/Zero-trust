@@ -103,6 +103,17 @@ async function initializeDatabase() {
                 status: 'active',
                 mfaEnabled: false,
             },
+            {
+                username: 'joe',
+                email: 'joe@soraiam.com',
+                passwordHash: await bcrypt.hash('joe', 10),
+                role: 'employee',
+                firstName: 'Joe',
+                lastName: 'Doe',
+                department: 'Operations',
+                status: 'active',
+                mfaEnabled: false,
+            },
         ]);
 
         console.log('✅ Created users:', [admin.username, ...employees.map(e => e.username)]);
@@ -182,6 +193,40 @@ async function initializeDatabase() {
                     owner: 'Human Resources',
                     dataClassification: 'confidential',
                     complianceRequirements: ['GDPR', 'HIPAA'],
+                },
+            },
+            {
+                resourceId: 'admin-dashboard',
+                name: 'Admin Dashboard',
+                description: 'System administration and user management',
+                resourceType: 'dashboard',
+                environment: 'on-prem',
+                sensitivity: 'critical',
+                sensitivityScore: 9,
+                requiredTrustScore: 80,
+                mfaRequired: true,
+                allowedRoles: ['admin'],
+                status: 'active',
+                metadata: {
+                    owner: 'IT Security',
+                    dataClassification: 'restricted',
+                },
+            },
+            {
+                resourceId: 'employee-dashboard',
+                name: 'Employee Dashboard',
+                description: 'Personal employee portal',
+                resourceType: 'dashboard',
+                environment: 'on-prem',
+                sensitivity: 'standard',
+                sensitivityScore: 5,
+                requiredTrustScore: 60,
+                mfaRequired: false,
+                allowedRoles: ['employee', 'admin'],
+                status: 'active',
+                metadata: {
+                    owner: 'HR',
+                    dataClassification: 'internal',
                 },
             },
         ]);

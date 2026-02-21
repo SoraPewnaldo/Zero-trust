@@ -9,9 +9,10 @@
         "build": "tsc",
         "start": "node dist/server.js",
         "init-db": "tsx src/scripts/initDb.ts",
+        "init-db:prod": "node dist/scripts/initDb.js",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts"
+        "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src -c .eslintrc.cjs"
     },
     "keywords": [
         "zero-trust",
@@ -43,7 +44,6 @@
         "@types/uuid": "^9.0.7",
         "@typescript-eslint/eslint-plugin": "^6.18.0",
         "@typescript-eslint/parser": "^6.18.0",
-        "cross-env": "^10.1.0",
         "eslint": "^8.56.0",
         "supertest": "^6.3.3",
         "tsx": "^4.7.0",

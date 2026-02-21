@@ -15,8 +15,10 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isVerified: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  verify: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,22 +26,28 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Check for existing session on mount
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('authToken');
       const savedUser = localStorage.getItem('user');
+      const savedVerification = sessionStorage.getItem('isVerified');
 
       if (token && savedUser) {
         try {
           // Verify token is still valid
           const userData = await api.auth.getCurrentUser();
           setUser(userData);
+          if (savedVerification === 'true') {
+            setIsVerified(true);
+          }
         } catch (error) {
           // Token invalid, clear storage
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
+          sessionStorage.removeItem('isVerified');
         }
       }
       setIsLoading(false);
@@ -56,6 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Store token and user data
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
+
+        // Reset verification on new login
+        setIsVerified(false);
+        sessionStorage.removeItem('isVerified');
 
         setUser({
           id: response.user.id,
@@ -89,8 +101,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear local storage and state
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      sessionStorage.removeItem('isVerified');
       setUser(null);
+      setIsVerified(false);
     }
+  }, []);
+
+  const verify = useCallback(() => {
+    setIsVerified(true);
+    sessionStorage.setItem('isVerified', 'true');
   }, []);
 
   if (isLoading) {
@@ -98,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isVerified, login, logout, verify }}>
       {children}
     </AuthContext.Provider>
   );
