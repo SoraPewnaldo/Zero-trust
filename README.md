@@ -173,8 +173,11 @@ docker-compose up -d --build
 
 ---
 
-**Author**: SoraPewnaldo  
+**Author**: Ayush Dakwal  
             Aakhya Chhauhan
             Ritik Arora
             Jivaj Arora
 **Support**: For issues, open a ticket at [GitHub Issues](https://github.com/SoraPewnaldo/Zero-trust/issues)
+
+
+    
