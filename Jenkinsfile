@@ -22,10 +22,10 @@ pipeline {
             agent any
             steps {
                 dir('server') {
-                    sh 'npm install'
-                    sh 'ESLINT_USE_FLAT_CONFIG=false npm run lint --if-present'
-                    sh 'npm run test -- --run || echo "Implement tests later"'
-                    sh 'npm run build'
+                    bat 'npm install'
+                    bat 'SET "ESLINT_USE_FLAT_CONFIG=false" && npm run lint --if-present'
+                    bat 'npm run test -- --run || echo Implement tests later'
+                    bat 'npm run build'
                 }
             }
         }
@@ -33,9 +33,9 @@ pipeline {
         stage('Frontend Validation (Test & Lint)') {
             agent any
             steps {
-                sh 'npm install'
-                sh 'npm run lint'
-                sh 'npm run build || echo "Vite build complete"'
+                bat 'npm install'
+                bat 'npm run lint'
+                bat 'npm run build || echo Vite build complete'
             }
         }
 
@@ -44,10 +44,10 @@ pipeline {
                 script {
                     // This verifies the Docker files build successfully.
                     echo "Building Frontend Image..."
-                    sh "docker build -t ${DOCKER_FRONTEND_IMAGE} -f Dockerfile ."
+                    bat "docker build -t ${DOCKER_FRONTEND_IMAGE} -f Dockerfile ."
                     
                     echo "Building Backend Image..."
-                    sh "docker build -t ${DOCKER_BACKEND_IMAGE} -f server/Dockerfile ./server"
+                    bat "docker build -t ${DOCKER_BACKEND_IMAGE} -f server/Dockerfile ./server"
                 }
             }
         }
@@ -56,8 +56,8 @@ pipeline {
             steps {
                 script {
                     // Remove local images to free up space
-                    sh "docker rmi ${DOCKER_FRONTEND_IMAGE} || true"
-                    sh "docker rmi ${DOCKER_BACKEND_IMAGE} || true"
+                    bat "docker rmi ${DOCKER_FRONTEND_IMAGE} || (echo Image already removed)"
+                    bat "docker rmi ${DOCKER_BACKEND_IMAGE} || (echo Image already removed)"
                 }
             }
         }
