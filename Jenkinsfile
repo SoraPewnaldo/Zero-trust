@@ -70,9 +70,9 @@ pipeline {
                 script {
                     echo "Deploying to AWS EC2 (15.207.15.101)..."
                     
-                    // This block requires the "SSH Agent" plugin installed in Jenkins
-                    sshagent(['ec2-ssh-key']) {
-                        bat "ssh -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd app && git pull && docker-compose up -d --build\""
+                    // Use withCredentials for better compatibility on Windows hosts
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'PEM_KEY')]) {
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd app && git pull && docker-compose up -d --build\""
                     }
                 }
             }
