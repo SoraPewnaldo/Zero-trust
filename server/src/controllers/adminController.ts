@@ -194,10 +194,10 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
         if (scans.length > 0) {
             console.log('DEBUG: Scans content detail:', JSON.stringify(scans.map(s => ({
                 id: s._id,
-                user: (s.userId as unknown as { username: string }).username || (s.userId as unknown as string),
+                user: (s.userId && typeof s.userId === 'object' && 'username' in s.userId ? (s.userId as unknown as { username: string }).username : (s.userId || 'Unknown')),
                 score: s.trustScore,
                 decision: s.decision,
-                resource: (s.resourceId as unknown as { name: string }).name
+                resource: (s.resourceId && typeof s.resourceId === 'object' && 'name' in s.resourceId ? (s.resourceId as unknown as { name: string }).name : 'Unknown')
             }))));
         }
 
@@ -209,7 +209,7 @@ export const getScanLogs = async (req: AuthRequest, res: Response): Promise<void
 
             // Try to find a real trust score for this user if it's a login event
             let trustScore = 0; // Default to 0 for Zero Trust if no scan exists
-            if (log.eventType.includes('login') || log.eventType === 'mfa_verified') {
+            if (log.eventType && (log.eventType.includes('login') || log.eventType === 'mfa_verified')) {
                 // Try searching by userId first, then by username as fallback
                 let latestScan = await ScanResult.findOne({ userId: log.actor?.userId })
                     .sort({ createdAt: -1 })
