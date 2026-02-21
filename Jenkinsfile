@@ -72,8 +72,17 @@ pipeline {
                     
                     // Use withCredentials for better compatibility on Windows hosts
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'PEM_KEY')]) {
-                        // Secure the key permissions (Windows icacls) to prevent "UNPROTECTED PRIVATE KEY FILE" error
-                        bat "icacls %PEM_KEY% /inheritance:r /grant:r %USERNAME%:F"
+                        // Secure your .pem key using PowerShell (Native Windows ACLs are more robust than icacls)
+                        powershell """
+                            \$path = \"${PEM_KEY}\"
+                            \$acl = Get-Acl \$path
+                            \$acl.SetAccessRuleProtection(\$true, \$false)
+                            \$acl.Access | ForEach-Object { \$acl.RemoveAccessRule(\$_) }
+                            \$user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                            \$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(\$user, \"FullControl\", \"Allow\")
+                            \$acl.AddAccessRule(\$rule)
+                            Set-Acl \$path \$acl
+                        """
                         bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd app && git pull && docker-compose up -d --build\""
                     }
                 }
