@@ -1,124 +1,93 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:7.0
-    container_name: soraiam-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: soraiam
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-    networks:
-      - soraiam-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/soraiam --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
-
-  # Backend API
-  backend:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: soraiam-backend
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/soraiam?authSource=admin
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      JWT_EXPIRES_IN: 24h
-      CORS_ORIGIN: http://localhost,http://localhost:8080
-      TRUST_ENGINE_URL: http://trust-engine:5000/scan
-    ports:
-      - "3001:3001"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - soraiam-network
-    healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
-
-  # Python Trust Engine (PDP)
-  trust-engine:
-    build:
-      context: ./trust_engine
-      dockerfile: Dockerfile
-    container_name: soraiam-trust-engine
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    networks:
-      - soraiam-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "-X", "POST", "http://localhost:5000/scan", "-d", "{\"test\":true}", "-H", "Content-Type: application/json" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # Frontend
+  # -------------------------
+  # Frontend (Vite/React)
+  # -------------------------
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: soraiam-frontend
-    restart: unless-stopped
+    container_name: soraiam-frontend-dev
     ports:
-      - "80:80"
+      - "5173:8080"
+    environment:
+      - VITE_API_URL=/api
+      - BACKEND_URL=http://backend:3001
+    volumes:
+      - .:/app
+      - /app/node_modules # Prevent host node_modules from overwriting container node_modules
+    networks:
+      - dev-network
     depends_on:
       - backend
-    networks:
-      - soraiam-network
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
 
-  # MongoDB Express (Optional - Database Admin UI)
-  mongo-express:
-    image: mongo-express:latest
-    container_name: soraiam-mongo-express
-    restart: unless-stopped
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
-      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin
+  # -------------------------
+  # Backend (Node/Express)
+  # -------------------------
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: soraiam-backend-dev
     ports:
-      - "8081:8081"
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/soraiam_dev
+      - PORT=3001
+      - CORS_ORIGIN=http://localhost:5173
+      - JWT_SECRET=dev_secret_key_change_in_prod
+      - TRUST_ENGINE_URL=http://trust_engine:5000/scan
+    volumes:
+      - ./server:/app
+      - /app/node_modules
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
-      - soraiam-network
-    profiles:
-      - debug
+      - dev-network
+
+  # -------------------------
+  # Trust Engine (Python)
+  # -------------------------
+  trust_engine:
+    build:
+      context: ./trust_engine
+      dockerfile: Dockerfile
+    container_name: soraiam-trust-engine-dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./trust_engine:/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    networks:
+      - dev-network
+
+  # -------------------------
+  # Database (MongoDB)
+  # -------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: soraiam-mongodb-dev
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
+    networks:
+      - dev-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 networks:
-  soraiam-network:
+  dev-network:
     driver: bridge
 
 volumes:
-  mongodb_data:
-    driver: local
-  mongodb_config:
-    driver: local
+  mongodb_dev_data:
