@@ -22,8 +22,8 @@ pipeline {
             agent any
             steps {
                 dir('server') {
-                    bat 'npm ci'
-                    bat 'set ESLINT_USE_FLAT_CONFIG=false && npm run lint --if-present'
+                    bat 'npm install'
+                    bat 'npm run lint --if-present'
                     bat 'npm run test -- --run || echo Implement tests later'
                     bat 'npm run build'
                 }
@@ -33,7 +33,7 @@ pipeline {
         stage('Frontend Validation (Test & Lint)') {
             agent any
             steps {
-                bat 'npm ci'
+                bat 'npm install'
                 bat 'npm run lint'
                 bat 'npm run build || echo Vite build complete'
             }
@@ -56,8 +56,8 @@ pipeline {
             steps {
                 script {
                     // Remove local images to free up space
-                    bat "docker rmi ${DOCKER_FRONTEND_IMAGE} || exit 0"
-                    bat "docker rmi ${DOCKER_BACKEND_IMAGE} || exit 0"
+                    bat "docker rmi ${DOCKER_FRONTEND_IMAGE} || (echo Image already removed)"
+                    bat "docker rmi ${DOCKER_BACKEND_IMAGE} || (echo Image already removed)"
                 }
             }
         }
