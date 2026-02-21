@@ -23,7 +23,7 @@ pipeline {
             steps {
                 dir('server') {
                     bat 'npm install'
-                    bat 'SET "ESLINT_USE_FLAT_CONFIG=false" && npm run lint --if-present'
+                    bat 'npm run lint --if-present'
                     bat 'npm run test -- --run || echo Implement tests later'
                     bat 'npm run build'
                 }
