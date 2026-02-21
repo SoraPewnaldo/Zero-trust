@@ -1,41 +1,17 @@
-# Backend Dockerfile
-FROM node:18-alpine AS builder
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Build TypeScript
-RUN npm run build
-
-# Production stage
+# Development Dockerfile for backend (Node/Express)
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Copy source code (will be overridden by volume mount)
+COPY . .
 
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
-
-# Expose port
+# Expose backend port
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Start server
-CMD ["node", "dist/server.js"]
+# Run using the dev script (requires tsx/ts-node setup in package.json)
+CMD ["npm", "run", "dev"]
