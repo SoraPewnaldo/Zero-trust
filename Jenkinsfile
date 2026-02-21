@@ -72,6 +72,8 @@ pipeline {
                     
                     // Use withCredentials for better compatibility on Windows hosts
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'PEM_KEY')]) {
+                        // Secure the key permissions (Windows icacls) to prevent "UNPROTECTED PRIVATE KEY FILE" error
+                        bat "icacls %PEM_KEY% /inheritance:r /grant:r %USERNAME%:F"
                         bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd app && git pull && docker-compose up -d --build\""
                     }
                 }
