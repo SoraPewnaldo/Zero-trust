@@ -61,6 +61,27 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    echo "Deploying to AWS EC2 (15.207.15.101)..."
+                    // Step for user: 
+                    // 1. Add your .pem key to Jenkins -> Credentials -> System -> Global -> Add Credentials
+                    // 2. Select "SSH Username with private key"
+                    // 3. ID it as 'ec2-ssh-key' and paste your .pem content.
+                    
+                    echo "Commands to execute: cd /home/ubuntu/app && git pull && docker-compose up -d --build"
+                    // In a real environment with the SSH Agent plugin installed:
+                    // sshagent(['ec2-ssh-key']) {
+                    //    sh "ssh -o StrictHostKeyChecking=no ubuntu@15.207.15.101 'cd app && git pull && docker-compose up -d --build'"
+                    // }
+                }
+            }
+        }
     }
 
     post {
