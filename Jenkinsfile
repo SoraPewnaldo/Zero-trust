@@ -83,7 +83,7 @@ pipeline {
                             \$acl.AddAccessRule(\$rule)
                             Set-Acl \$path \$acl
                         """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd app && git pull && docker-compose up -d --build\""
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git pull && docker-compose up -d --build\""
                     }
                 }
             }
