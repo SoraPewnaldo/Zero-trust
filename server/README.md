@@ -1,4 +1,4 @@
-# SoraIAM Backend Server
+# ZeroIAM Backend Server
 
 Zero Trust Identity & Access Management Backend API
 
@@ -75,7 +75,7 @@ After running `npm run init-db`:
 ### Option 1: Local MongoDB
 Install MongoDB locally and use:
 ```
-MONGODB_URI=mongodb://localhost:27017/soraiam
+MONGODB_URI=mongodb://localhost:27017/zeroiam
 ```
 
 ### Option 2: MongoDB Atlas (Cloud)

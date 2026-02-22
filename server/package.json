@@ -1,7 +1,7 @@
 {
-    "name": "soraiam-backend",
+    "name": "zeroiam-backend",
     "version": "1.0.0",
-    "description": "SoraIAM Zero Trust Backend API",
+    "description": "ZeroIAM Zero Trust Backend API",
     "main": "dist/server.js",
     "type": "module",
     "scripts": {
@@ -12,7 +12,7 @@
         "init-db:prod": "node dist/scripts/initDb.js",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint src -c .eslintrc.cjs"
+        "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts -c .eslintrc.cjs"
     },
     "keywords": [
         "zero-trust",

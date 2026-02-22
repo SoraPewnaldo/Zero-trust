@@ -55,7 +55,7 @@ const startServer = async () => {
 
         // Start listening
         app.listen(config.port, () => {
-            console.log('\n🚀 SoraIAM Backend Server');
+            console.log('\n🚀 ZeroIAM Backend Server');
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             console.log(`📡 Server running on port ${config.port}`);
             console.log(`🌍 Environment: ${config.env}`);

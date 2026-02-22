@@ -25,7 +25,7 @@ async function initializeDatabase() {
 
         const admin = await User.create({
             username: 'sora',
-            email: 'sora@soraiam.com',
+            email: 'sora@zeroiam.com',
             passwordHash: adminPassword,
             role: 'admin',
             firstName: 'Sora',
@@ -39,7 +39,7 @@ async function initializeDatabase() {
         const employees = await User.create([
             {
                 username: 'sarah.johnson',
-                email: 'sarah.johnson@soraiam.com',
+                email: 'sarah.johnson@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'Sarah',
@@ -50,7 +50,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'michael.chen',
-                email: 'michael.chen@soraiam.com',
+                email: 'michael.chen@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'Michael',
@@ -61,7 +61,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'emily.rodriguez',
-                email: 'emily.rodriguez@soraiam.com',
+                email: 'emily.rodriguez@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'Emily',
@@ -72,7 +72,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'david.kim',
-                email: 'david.kim@soraiam.com',
+                email: 'david.kim@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'David',
@@ -83,7 +83,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'jessica.patel',
-                email: 'jessica.patel@soraiam.com',
+                email: 'jessica.patel@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'Jessica',
@@ -94,7 +94,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'james.wilson',
-                email: 'james.wilson@soraiam.com',
+                email: 'james.wilson@zeroiam.com',
                 passwordHash: await bcrypt.hash('password123', 10),
                 role: 'employee',
                 firstName: 'James',
@@ -105,7 +105,7 @@ async function initializeDatabase() {
             },
             {
                 username: 'joe',
-                email: 'joe@soraiam.com',
+                email: 'joe@zeroiam.com',
                 passwordHash: await bcrypt.hash('joe', 10),
                 role: 'employee',
                 firstName: 'Joe',

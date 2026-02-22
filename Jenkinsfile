@@ -4,8 +4,8 @@ pipeline {
     environment {
         // We define Node version dynamically from NVM or tools if needed, 
         // but typically Jenkins agents have docker. We'll use docker images for build steps ensuring consistency.
-        DOCKER_FRONTEND_IMAGE = "soraiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
-        DOCKER_BACKEND_IMAGE = "soraiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
     }
 
     stages {
@@ -24,7 +24,7 @@ pipeline {
                 dir('server') {
                     bat 'npm install'
                     bat 'npm run lint --if-present'
-                    bat 'npm run test -- --run || exit /b 0'
+                    bat 'npm run test -- --run || echo Implement tests later'
                     bat 'npm run build'
                 }
             }

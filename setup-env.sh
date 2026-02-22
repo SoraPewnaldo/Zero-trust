@@ -8,7 +8,7 @@ MONGO_PASS=$(openssl rand -base64 24)
 # Create environment file
 cat > .env.production << EOF
 # MongoDB
-MONGODB_URI=mongodb://mongodb:27017/soraiam
+MONGODB_URI=mongodb://mongodb:27017/zeroiam
 MONGO_INITDB_ROOT_USERNAME=admin
 MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASS
 
