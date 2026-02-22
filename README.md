@@ -1,16 +1,16 @@
-# SoraIAM - Zero Trust Identity and Access Management
+# ZeroIAM - Zero Trust Identity and Access Management
 
-![SoraIAM](https://img.shields.io/badge/SoraIAM-Zero%20Trust%20IAM-blue)
+![ZeroIAM](https://img.shields.io/badge/ZeroIAM-Zero%20Trust%20IAM-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Version](https://img.shields.io/badge/version-1.1.0-orange)
 
-**SoraIAM** is an enterprise-grade Zero Trust Identity and Access Management platform. It implements a "Never Trust, Always Verify" philosophy by combining real-time device posture scanning (Python Trust Engine) with context-aware access control (Node.js Backend).
+**ZeroIAM** is an enterprise-grade Zero Trust Identity and Access Management platform. It implements a "Never Trust, Always Verify" philosophy by combining real-time device posture scanning (Python Trust Engine) with context-aware access control (Node.js Backend).
 
 ---
 
 ## 🏗️ System Architecture
 
-SoraIAM is composed of four primary services working in tandem:
+ZeroIAM is composed of four primary services working in tandem:
 
 ```mermaid
 graph TD
@@ -151,7 +151,7 @@ docker-compose up -d --build
 - **Application**: http://localhost (via Nginx proxy on Port 80)
 - **Initialize DB (Internal)**:
   ```bash
-  docker exec -it soraiam-backend npm run init-db
+  docker exec -it zeroiam-backend npm run init-db
   ```
 
 ---

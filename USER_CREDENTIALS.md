@@ -1,4 +1,4 @@
-# SoraIAM User Credentials
+# ZeroIAM User Credentials
 
 ## Admin Account
 - **Username**: `sora`

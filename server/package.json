@@ -1,7 +1,7 @@
 {
-    "name": "soraiam-backend",
+    "name": "zeroiam-backend",
     "version": "1.0.0",
-    "description": "SoraIAM Zero Trust Backend API",
+    "description": "ZeroIAM Zero Trust Backend API",
     "main": "dist/server.js",
     "type": "module",
     "scripts": {
