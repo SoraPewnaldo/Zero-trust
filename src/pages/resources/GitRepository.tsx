@@ -17,8 +17,8 @@ export default function GitRepository() {
                     </div>
 
                     {[
-                        { name: 'soraiam-backend', lang: 'TypeScript', stars: 124, updated: '2 hours ago' },
-                        { name: 'soraiam-frontend', lang: 'React', stars: 98, updated: '4 hours ago' },
+                        { name: 'zeroiam-backend', lang: 'TypeScript', stars: 124, updated: '2 hours ago' },
+                        { name: 'zeroiam-frontend', lang: 'React', stars: 98, updated: '4 hours ago' },
                         { name: 'trust-engine-pdp', lang: 'Python', stars: 45, updated: 'Yesterday' },
                         { name: 'infrastructure-iac', lang: 'HCL', stars: 12, updated: '3 days ago' }
                     ].map((repo, idx) => (
@@ -51,8 +51,8 @@ export default function GitRepository() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {[
-                                { user: 'sora', action: 'pushed to', target: 'main', repo: 'soraiam-backend', time: '10m ago', icon: GitCommit },
-                                { user: 'sarah.j', action: 'opened PR', target: 'feat/mfa', repo: 'soraiam-frontend', time: '1h ago', icon: GitPullRequest },
+                                { user: 'sora', action: 'pushed to', target: 'main', repo: 'zeroiam-backend', time: '10m ago', icon: GitCommit },
+                                { user: 'sarah.j', action: 'opened PR', target: 'feat/mfa', repo: 'zeroiam-frontend', time: '1h ago', icon: GitPullRequest },
                                 { user: 'mike.c', action: 'merged', target: 'fix/auth', repo: 'trust-engine', time: '3h ago', icon: GitBranch },
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-3 text-sm">

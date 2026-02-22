@@ -8,7 +8,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: soraiam-frontend-dev
+    container_name: zeroiam-frontend-dev
     ports:
       - "5173:8080"
     environment:
@@ -29,12 +29,12 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: soraiam-backend-dev
+    container_name: zeroiam-backend-dev
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongodb:27017/soraiam_dev
+      - MONGODB_URI=mongodb://mongodb:27017/zeroiam_dev
       - PORT=3001
       - CORS_ORIGIN=http://localhost:5173
       - JWT_SECRET=dev_secret_key_change_in_prod
@@ -55,7 +55,7 @@ services:
     build:
       context: ./trust_engine
       dockerfile: Dockerfile
-    container_name: soraiam-trust-engine-dev
+    container_name: zeroiam-trust-engine-dev
     ports:
       - "5000:5000"
     volumes:
@@ -71,7 +71,7 @@ services:
   # -------------------------
   mongodb:
     image: mongo:7.0
-    container_name: soraiam-mongodb-dev
+    container_name: zeroiam-mongodb-dev
     ports:
       - "27017:27017"
     volumes:
