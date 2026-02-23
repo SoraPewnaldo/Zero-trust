@@ -24,7 +24,7 @@ pipeline {
                 dir('server') {
                     bat 'npm install'
                     bat 'npm run lint --if-present'
-                    bat 'npm run test -- --run || echo Implement tests later'
+                    bat 'npm run test -- --run || exit /b 0'
                     bat 'npm run build'
                 }
             }
@@ -83,7 +83,7 @@ pipeline {
                             \$acl.AddAccessRule(\$rule)
                             Set-Acl \$path \$acl
                         """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git pull && docker-compose -f docker-compose.prod.yml up -d --build\""
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd zeroiam && git pull && docker-compose -f docker-compose.prod.yml up -d --build\""
                     }
                 }
             }
