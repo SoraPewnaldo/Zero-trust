@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [loadingUser, setLoadingUser] = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; userId: string | null }>({ show: false, userId: null });
+  const [sortField, setSortField] = useState<'timestamp' | 'username' | 'resource' | 'trustScore' | 'decision'>('timestamp');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const fetchData = async () => {
     setLoading(true);
@@ -280,6 +282,42 @@ export default function AdminDashboard() {
     return 'text-white/50 bg-white/5';
   };
 
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedLogs = [...logs].sort((a, b) => {
+    let valA: string | number = '';
+    let valB: string | number = '';
+    if (sortField === 'timestamp') { valA = new Date(a.timestamp).getTime(); valB = new Date(b.timestamp).getTime(); }
+    else if (sortField === 'username') { valA = a.username.toLowerCase(); valB = b.username.toLowerCase(); }
+    else if (sortField === 'resource') { valA = (a.resource ?? '').toLowerCase(); valB = (b.resource ?? '').toLowerCase(); }
+    else if (sortField === 'trustScore') { valA = a.trustScore; valB = b.trustScore; }
+    else if (sortField === 'decision') { valA = a.decision.toLowerCase(); valB = b.decision.toLowerCase(); }
+    if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const SortHeader = ({ field, label }: { field: typeof sortField; label: string }) => (
+    <th
+      className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4 cursor-pointer select-none hover:text-white/80 transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        <span className="text-white/30">
+          {sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+        </span>
+      </span>
+    </th>
+  );
+
   // Chart data
   const decisionChartData = stats ? [
     { name: 'ALLOW', value: stats.allowCount },
@@ -505,18 +543,18 @@ export default function AdminDashboard() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-white/20">
-                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">TIMESTAMP</th>
-                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">USER</th>
-                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">RESOURCE</th>
+                        <SortHeader field="timestamp" label="TIMESTAMP" />
+                        <SortHeader field="username" label="USER" />
+                        <SortHeader field="resource" label="RESOURCE" />
                         <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DEVICE</th>
                         <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">CONTEXT</th>
-                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">SCORE</th>
-                        <th className="text-[10px] font-mono text-white/50 tracking-wider py-2 pr-4">DECISION</th>
+                        <SortHeader field="trustScore" label="SCORE" />
+                        <SortHeader field="decision" label="DECISION" />
                         <th className="text-[10px] font-mono text-white/50 tracking-wider py-2">DETAILS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {logs.map(entry => (
+                      {sortedLogs.map(entry => (
                         <>
                           <tr key={entry.id} className="border-b border-white/5">
                             <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
