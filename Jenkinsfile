@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        // We define Node version dynamically from NVM or tools if needed, 
-        // but typically Jenkins agents have docker. We'll use docker images for build steps ensuring consistency.
-        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
-        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        SAFE_BRANCH = "${env.BRANCH_NAME.replaceAll('/', '-')}"
+        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${SAFE_BRANCH}-${env.BUILD_ID}"
+        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${SAFE_BRANCH}-${env.BUILD_ID}"
     }
 
     stages {
