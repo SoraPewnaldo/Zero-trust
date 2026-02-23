@@ -99,6 +99,53 @@ pipeline {
         }
         failure {
             echo "Pipeline failed for branch ${env.BRANCH_NAME}. Please check logs."
+            
+            script {
+                try {
+                    withCredentials([usernamePassword(credentialsId: 'jira-credentials', passwordVariable: 'JIRA_API_TOKEN', usernameVariable: 'JIRA_EMAIL')]) {
+                        powershell """
+                            \$jiraUrl = "https://<YOUR_JIRA_DOMAIN>.atlassian.net"
+                            \$projectKey = "<YOUR_PROJECT_KEY>"
+                            
+                            // IMPORTANT: Replace <YOUR_JIRA_DOMAIN> and <YOUR_PROJECT_KEY> above with your actual details!
+                            
+                            if (\$jiraUrl -match "<YOUR_JIRA_DOMAIN>") {
+                                Write-Host "Skipping Jira ticket creation because JIRA_DOMAIN placeholder was not replaced."
+                                exit 0
+                            }
+
+                            \$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("\${JIRA_EMAIL}:\${JIRA_API_TOKEN}"))
+                            
+                            \$headers = @{
+                                "Authorization" = "Basic \$base64AuthInfo"
+                                "Content-Type" = "application/json"
+                            }
+                            
+                            \$body = @{
+                                fields = @{
+                                    project = @{
+                                        key = \$projectKey
+                                    }
+                                    summary = "Jenkins Build Failed: \${env.JOB_NAME} - Build #\${env.BUILD_NUMBER}"
+                                    description = "The Jenkins CI/CD pipeline failed for branch \${env.BRANCH_NAME}.`n`nCheck the logs here: \${env.BUILD_URL}"
+                                    issuetype = @{
+                                        name = "Bug"
+                                    }
+                                }
+                            } | ConvertTo-Json -Depth 5
+                            
+                            try {
+                                \$response = Invoke-RestMethod -Uri "\$jiraUrl/rest/api/2/issue" -Method Post -Headers \$headers -Body \$body -ErrorAction Stop
+                                Write-Host "Successfully created Jira Bug Ticket: \$(\$response.key)"
+                            } catch {
+                                Write-Error "Failed to create Jira ticket: \$_"
+                            }
+                        """
+                    }
+                } catch (Exception e) {
+                    echo "Could not create Jira ticket. Did you set up the 'jira-credentials' ID? Error: ${e.message}"
+                }
+            }
         }
     }
 }
