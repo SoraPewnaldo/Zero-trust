@@ -1,11 +1,10 @@
-pipeline {
+    pipeline {
     agent any
 
     environment {
-        // We define Node version dynamically from NVM or tools if needed, 
-        // but typically Jenkins agents have docker. We'll use docker images for build steps ensuring consistency.
-        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
-        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        SAFE_BRANCH = "${env.BRANCH_NAME.replaceAll('/', '-')}"
+        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${SAFE_BRANCH}-${env.BUILD_ID}"
+        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${SAFE_BRANCH}-${env.BUILD_ID}"
     }
 
     stages {
@@ -83,7 +82,7 @@ pipeline {
                             \$acl.AddAccessRule(\$rule)
                             Set-Acl \$path \$acl
                         """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git fetch origin && git reset --hard origin/main && docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d --build\""
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git fetch origin && git reset --hard origin/main && docker-compose -f docker-compose.prod.yml up -d --build --no-deps frontend backend trust-engine && docker-compose -f docker-compose.prod.yml up -d --no-recreate mongodb\""
                     }
                 }
             }
@@ -99,6 +98,52 @@ pipeline {
         }
         failure {
             echo "Pipeline failed for branch ${env.BRANCH_NAME}. Please check logs."
+            
+            script {
+                try {
+                    withCredentials([usernamePassword(credentialsId: 'jira-credentials', passwordVariable: 'JIRA_API_TOKEN', usernameVariable: 'JIRA_EMAIL')]) {
+                        powershell """
+                            \$jiraUrl = "https://st-team-z0wxpjk8.atlassian.net"
+                            \$projectKey = "SCRUM"
+
+                            
+                            if (\$jiraUrl -match "<YOUR_JIRA_DOMAIN>") {
+                                Write-Host "Skipping Jira ticket creation because JIRA_DOMAIN placeholder was not replaced."
+                                exit 0
+                            }
+
+                            \$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("\${JIRA_EMAIL}:\${JIRA_API_TOKEN}"))
+                            
+                            \$headers = @{
+                                "Authorization" = "Basic \$base64AuthInfo"
+                                "Content-Type" = "application/json"
+                            }
+                            
+                            \$body = @{
+                                fields = @{
+                                    project = @{
+                                        key = \$projectKey
+                                    }
+                                    summary = "Jenkins Build Failed: \${env.JOB_NAME} - Build #\${env.BUILD_NUMBER}"
+                                    description = "The Jenkins CI/CD pipeline failed for branch \${env.BRANCH_NAME}.`n`nCheck the logs here: \${env.BUILD_URL}"
+                                    issuetype = @{
+                                        name = "Bug"
+                                    }
+                                }
+                            } | ConvertTo-Json -Depth 5
+                            
+                            try {
+                                \$response = Invoke-RestMethod -Uri "\$jiraUrl/rest/api/2/issue" -Method Post -Headers \$headers -Body \$body -ErrorAction Stop
+                                Write-Host "Successfully created Jira Bug Ticket: \$(\$response.key)"
+                            } catch {
+                                Write-Error "Failed to create Jira ticket: \$_"
+                            }
+                        """
+                    }
+                } catch (Exception e) {
+                    echo "Could not create Jira ticket. Did you set up the 'jira-credentials' ID? Error: ${e.message}"
+                }
+            }
         }
     }
 }
