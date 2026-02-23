@@ -1,4 +1,4 @@
-pipeline {
+    pipeline {
     agent any
 
     environment {
@@ -104,10 +104,9 @@ pipeline {
                 try {
                     withCredentials([usernamePassword(credentialsId: 'jira-credentials', passwordVariable: 'JIRA_API_TOKEN', usernameVariable: 'JIRA_EMAIL')]) {
                         powershell """
-                            \$jiraUrl = "https://<YOUR_JIRA_DOMAIN>.atlassian.net"
-                            \$projectKey = "<YOUR_PROJECT_KEY>"
-                            
-                            // IMPORTANT: Replace <YOUR_JIRA_DOMAIN> and <YOUR_PROJECT_KEY> above with your actual details!
+                            \$jiraUrl = "https://st-team-z0wxpjk8.atlassian.net"
+                            \$projectKey = "SCRUM"
+
                             
                             if (\$jiraUrl -match "<YOUR_JIRA_DOMAIN>") {
                                 Write-Host "Skipping Jira ticket creation because JIRA_DOMAIN placeholder was not replaced."
