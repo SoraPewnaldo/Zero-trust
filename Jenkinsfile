@@ -83,7 +83,7 @@
                             \$acl.AddAccessRule(\$rule)
                             Set-Acl \$path \$acl
                         """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git fetch origin && git reset --hard origin/main && docker-compose -f docker-compose.prod.yml up -d --build\""
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git fetch origin && git reset --hard origin/main && docker-compose -f docker-compose.prod.yml up -d --build --no-deps frontend backend trust-engine && docker-compose -f docker-compose.prod.yml up -d --no-recreate mongodb\""
                     }
                 }
             }
