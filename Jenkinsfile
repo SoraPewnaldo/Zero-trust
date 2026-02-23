@@ -61,9 +61,6 @@ pipeline {
                 }
             }
         }
-<<<<<<< Updated upstream
-=======
-
         stage('Deploy to Production') {
             when {
                 branch 'main'
@@ -90,7 +87,6 @@ pipeline {
                 }
             }
         }
->>>>>>> Stashed changes
     }
 
     post {
