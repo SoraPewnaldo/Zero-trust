@@ -150,7 +150,7 @@ export default function EmployeeForm({ onClose, onSuccess, api }: EmployeeFormPr
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="w-full bg-black/50 border border-white/20 text-white font-mono text-xs px-3 py-2 pl-9 focus:outline-none focus:border-white/50"
-                                placeholder="john.doe@soraiam.com"
+                                placeholder="john.doe@zeroiam.com"
                                 required
                             />
                         </div>

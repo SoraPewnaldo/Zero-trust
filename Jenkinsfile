@@ -4,8 +4,8 @@ pipeline {
     environment {
         // We define Node version dynamically from NVM or tools if needed, 
         // but typically Jenkins agents have docker. We'll use docker images for build steps ensuring consistency.
-        DOCKER_FRONTEND_IMAGE = "soraiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
-        DOCKER_BACKEND_IMAGE = "soraiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${env.BRANCH_NAME}-${env.BUILD_ID}"
+        DOCKER_BACKEND_IMAGE = "zeroiam-backend:${env.BRANCH_NAME}-${env.BUILD_ID}"
     }
 
     stages {
@@ -83,7 +83,7 @@ pipeline {
                             \$acl.AddAccessRule(\$rule)
                             Set-Acl \$path \$acl
                         """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git pull && docker-compose -f docker-compose.prod.yml up -d --build\""
+                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd zeroiam && git pull && docker-compose -f docker-compose.prod.yml up -d --build\""
                     }
                 }
             }
