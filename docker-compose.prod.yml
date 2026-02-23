@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # MongoDB Database
@@ -18,7 +18,7 @@ services:
     networks:
       - zeroiam-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,9 @@ services:
 
   # Backend API
   backend:
-    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/backend:main
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     container_name: zeroiam-backend
     restart: unless-stopped
     environment:
@@ -35,7 +37,7 @@ services:
       MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin123}@mongodb:27017/zeroiam?authSource=admin
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h
-      CORS_ORIGIN: http://15.207.15.101,http://sorapew.tech,http://localhost,http://127.0.0.1
+      CORS_ORIGIN: http://15.207.15.101,http://sorapew.tech,https://sorapew.tech,http://localhost,http://127.0.0.1
       TRUST_ENGINE_URL: http://trust-engine:5000/scan
     depends_on:
       mongodb:
@@ -43,7 +45,13 @@ services:
     networks:
       - zeroiam-network
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001/health', (r) =>{process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -51,13 +59,27 @@ services:
 
   # Python Trust Engine (PDP)
   trust-engine:
-    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/trust-engine:main
+    build:
+      context: ./trust_engine
+      dockerfile: Dockerfile
     container_name: zeroiam-trust-engine
     restart: unless-stopped
     networks:
       - zeroiam-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "-X", "POST", "http://localhost:5000/scan", "-d", "{\"test\":true}", "-H", "Content-Type: application/json" ]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "-X",
+          "POST",
+          "http://localhost:5000/scan",
+          "-d",
+          '{"test":true}',
+          "-H",
+          "Content-Type: application/json",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -65,7 +87,9 @@ services:
 
   # Frontend (Nginx)
   frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY:-sorapewnaldo/zero-trust}/frontend:main
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     container_name: zeroiam-frontend
     restart: unless-stopped
     ports:
@@ -79,7 +103,15 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
