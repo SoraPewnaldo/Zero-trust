@@ -1,28 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IUser extends Document {
-    username: string;
-    email: string;
-    passwordHash: string;
-    role: 'employee' | 'admin';
-    firstName?: string;
-    lastName?: string;
-    department?: string;
-    status: 'active' | 'suspended' | 'inactive';
-    mfaEnabled: boolean;
-    mfaSecret?: string;
-    mfaBackupCodes?: string[];
-    createdAt: Date;
-    updatedAt: Date;
-    lastLoginAt?: Date;
-    metadata?: {
-        employeeId?: string;
-        manager?: mongoose.Types.ObjectId;
-        location?: string;
-    };
-}
-
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema(
     {
         username: {
             type: String,
@@ -80,4 +58,4 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ createdAt: -1 });
 
-export const User = mongoose.model<IUser>('User', UserSchema);
+export const User = mongoose.model('User', UserSchema);

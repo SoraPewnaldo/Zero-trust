@@ -1,37 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IDevice extends Document {
-    userId: mongoose.Types.ObjectId;
-    deviceId: string;
-    deviceType: 'managed' | 'personal';
-    deviceName?: string;
-    platform?: string;
-    browser?: string;
-    osVersion?: string;
-    browserVersion?: string;
-    isManaged: boolean;
-    trustLevel: 'trusted' | 'unverified' | 'compromised';
-    lastSeenAt: Date;
-    firstSeenAt: Date;
-    ipAddress?: string;
-    userAgent?: string;
-    deviceFingerprint?: {
-        screenResolution?: string;
-        timezone?: string;
-        language?: string;
-        plugins?: string[];
-    };
-    complianceStatus?: {
-        antivirusEnabled?: boolean;
-        diskEncrypted?: boolean;
-        osUpToDate?: boolean;
-        lastComplianceCheck?: Date;
-    };
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-const DeviceSchema = new Schema<IDevice>(
+const DeviceSchema = new Schema(
     {
         userId: {
             type: Schema.Types.ObjectId,
@@ -95,4 +64,4 @@ DeviceSchema.index({ userId: 1, lastSeenAt: -1 });
 DeviceSchema.index({ deviceType: 1, trustLevel: 1 });
 DeviceSchema.index({ isManaged: 1 });
 
-export const Device = mongoose.model<IDevice>('Device', DeviceSchema);
+export const Device = mongoose.model('Device', DeviceSchema);

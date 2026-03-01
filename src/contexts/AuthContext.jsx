@@ -1,30 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '@/lib/api';
 
-export type UserRole = 'employee' | 'admin';
+const AuthContext = createContext(null);
 
-export interface User {
-  id: string;
-  username: string;
-  role: UserRole;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isVerified: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  verify: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
 
@@ -56,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username, password) => {
     try {
       const response = await api.auth.login(username, password);
 
@@ -82,9 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return { success: false, error: 'AUTHENTICATION_FAILED' };
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Login error:', error);
-      const errorMsg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'AUTHENTICATION_FAILED';
+      const errorMsg = error?.response?.data?.error || 'AUTHENTICATION_FAILED';
       return {
         success: false,
         error: errorMsg

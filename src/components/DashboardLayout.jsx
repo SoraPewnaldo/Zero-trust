@@ -1,13 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface DashboardLayoutProps {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}
-
-export default function DashboardLayout({ title, subtitle, children }: DashboardLayoutProps) {
+export default function DashboardLayout({ title, subtitle, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 

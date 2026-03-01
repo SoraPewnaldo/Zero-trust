@@ -1,16 +1,5 @@
 import { XCircle } from 'lucide-react';
 
-interface ConfirmationModalProps {
-    isOpen: boolean;
-    title: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-    variant?: 'danger' | 'warning' | 'info';
-}
-
 export default function ConfirmationModal({
     isOpen,
     title,
@@ -20,7 +9,7 @@ export default function ConfirmationModal({
     onConfirm,
     onCancel,
     variant = 'danger'
-}: ConfirmationModalProps) {
+}) {
     if (!isOpen) return null;
 
     const variantStyles = {

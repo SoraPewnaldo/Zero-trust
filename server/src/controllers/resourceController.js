@@ -1,13 +1,11 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
 import { Resource } from '../models/Resource.js';
 
 /**
  * Get all active resources available to the user
  */
-export const getResources = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getResources = async (req, res) => {
     try {
-        const userRole = req.user!.role;
+        const userRole = req.user.role;
 
         const resources = await Resource.find({
             status: 'active',
@@ -24,7 +22,7 @@ export const getResources = async (req: AuthRequest, res: Response): Promise<voi
 /**
  * Get resource by ID
  */
-export const getResourceById = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getResourceById = async (req, res) => {
     try {
         const { resourceId } = req.params;
 
@@ -35,7 +33,7 @@ export const getResourceById = async (req: AuthRequest, res: Response): Promise<
         }
 
         // Check if user role is allowed
-        if (!resource.allowedRoles.includes(req.user!.role)) {
+        if (!resource.allowedRoles.includes(req.user.role)) {
             res.status(403).json({ error: 'Access denied' });
             return;
         }

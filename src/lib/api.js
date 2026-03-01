@@ -1,9 +1,9 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
-const apiClient: AxiosInstance = axios.create({
+const apiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ apiClient.interceptors.request.use(
 // Response interceptor - handle errors
 apiClient.interceptors.response.use(
     (response) => response,
-    (error: AxiosError) => {
+    (error) => {
         if (error.response?.status === 401) {
             // Token expired or invalid
             localStorage.removeItem('authToken');
@@ -43,7 +43,7 @@ apiClient.interceptors.response.use(
 export const api = {
     // Authentication
     auth: {
-        login: async (username: string, password: string) => {
+        login: async (username, password) => {
             const response = await apiClient.post('/auth/login', { username, password });
             return response.data;
         },
@@ -59,15 +59,15 @@ export const api = {
 
     // Verification
     verification: {
-        initiateScan: async (resourceId: string) => {
+        initiateScan: async (resourceId) => {
             const response = await apiClient.post('/verify/scan', { resourceId });
             return response.data;
         },
-        verifyMFA: async (scanId: string, mfaCode: string) => {
+        verifyMFA: async (scanId, mfaCode) => {
             const response = await apiClient.post('/verify/mfa', { scanId, mfaCode });
             return response.data;
         },
-        getScanStatus: async (scanId: string) => {
+        getScanStatus: async (scanId) => {
             const response = await apiClient.get(`/verify/status/${scanId}`);
             return response.data;
         },
@@ -79,7 +79,7 @@ export const api = {
             const response = await apiClient.get('/resources');
             return response.data;
         },
-        getById: async (resourceId: string) => {
+        getById: async (resourceId) => {
             const response = await apiClient.get(`/resources/${resourceId}`);
             return response.data;
         },
@@ -87,7 +87,7 @@ export const api = {
 
     // User
     user: {
-        getScanHistory: async (limit?: number) => {
+        getScanHistory: async (limit) => {
             const response = await apiClient.get('/user/scans', {
                 params: { limit },
             });
@@ -105,24 +105,13 @@ export const api = {
 
     // Admin
     admin: {
-        getDashboardStats: async (timeRange?: string) => {
+        getDashboardStats: async (timeRange) => {
             const response = await apiClient.get('/admin/stats', {
                 params: { timeRange },
             });
             return response.data;
         },
-        getScanLogs: async (params?: {
-            page?: number;
-            limit?: number;
-            decision?: string;
-            userId?: string;
-            resourceId?: string;
-            startDate?: string;
-            endDate?: string;
-            role?: string;
-            resource?: string;
-            username?: string;
-        }) => {
+        getScanLogs: async (params) => {
             const response = await apiClient.get('/admin/scans', { params });
             return response.data;
         },
@@ -130,15 +119,15 @@ export const api = {
             const response = await apiClient.get('/admin/users');
             return response.data;
         },
-        getUserDetail: async (userId: string) => {
+        getUserDetail: async (userId) => {
             const response = await apiClient.get(`/admin/users/${userId}`);
             return response.data;
         },
-        createUser: async (userData: unknown) => {
+        createUser: async (userData) => {
             const response = await apiClient.post('/admin/users', userData);
             return response.data;
         },
-        deleteUser: async (userId: string) => {
+        deleteUser: async (userId) => {
             const response = await apiClient.delete(`/admin/users/${userId}`);
             return response.data;
         },

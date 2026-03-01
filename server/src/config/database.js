@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { config } from './index.js';
 
-export const connectDatabase = async (): Promise<void> => {
+export const connectDatabase = async () => {
     try {
         await mongoose.connect(config.mongodb.uri);
         console.log('✅ MongoDB connected successfully');
@@ -20,7 +20,7 @@ export const connectDatabase = async (): Promise<void> => {
     }
 };
 
-export const disconnectDatabase = async (): Promise<void> => {
+export const disconnectDatabase = async () => {
     try {
         await mongoose.disconnect();
         console.log('✅ MongoDB disconnected');

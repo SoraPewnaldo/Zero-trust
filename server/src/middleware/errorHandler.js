@@ -1,11 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
-
-export const errorHandler = (
-    err: { statusCode?: number; message?: string; stack?: string },
-    req: Request,
-    res: Response,
-    _next: NextFunction
-): void => {
+export const errorHandler = (err, req, res, _next) => {
     console.error('Error:', err);
 
     const statusCode = err.statusCode || 500;
@@ -18,9 +11,7 @@ export const errorHandler = (
 };
 
 export class AppError extends Error {
-    statusCode: number;
-
-    constructor(message: string, statusCode: number = 500) {
+    constructor(message, statusCode = 500) {
         super(message);
         this.statusCode = statusCode;
         Error.captureStackTrace(this, this.constructor);

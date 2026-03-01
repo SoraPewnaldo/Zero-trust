@@ -1,30 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IResource extends Document {
-    resourceId: string;
-    name: string;
-    description?: string;
-    resourceType: 'dashboard' | 'repository' | 'console' | 'api';
-    environment: 'on-prem' | 'cloud' | 'hybrid';
-    cloudProvider?: 'aws' | 'azure' | 'gcp';
-    sensitivity: 'standard' | 'elevated' | 'critical';
-    sensitivityScore: number;
-    requiredTrustScore: number;
-    mfaRequired: boolean;
-    allowedRoles: string[];
-    url?: string;
-    tags?: string[];
-    status: 'active' | 'maintenance' | 'deprecated';
-    createdAt: Date;
-    updatedAt: Date;
-    metadata?: {
-        owner?: string;
-        dataClassification?: string;
-        complianceRequirements?: string[];
-    };
-}
-
-const ResourceSchema = new Schema<IResource>(
+const ResourceSchema = new Schema(
     {
         resourceId: {
             type: String,
@@ -99,4 +75,4 @@ ResourceSchema.index({ sensitivity: 1, status: 1 });
 ResourceSchema.index({ environment: 1 });
 ResourceSchema.index({ allowedRoles: 1 });
 
-export const Resource = mongoose.model<IResource>('Resource', ResourceSchema);
+export const Resource = mongoose.model('Resource', ResourceSchema);

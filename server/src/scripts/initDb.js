@@ -8,19 +8,15 @@ async function initializeDatabase() {
     try {
         console.log('🚀 Starting database initialization...');
 
-        // Connect to database
         await connectDatabase();
 
-        // Clear existing data (optional - comment out in production)
         console.log('🗑️  Clearing existing data...');
         await User.deleteMany({});
         await Resource.deleteMany({});
         await TrustPolicy.deleteMany({});
 
-        // Create default users
         console.log('👥 Creating default users...');
 
-        // Admin user
         const adminPassword = await bcrypt.hash('sora', 10);
 
         const admin = await User.create({
@@ -35,7 +31,6 @@ async function initializeDatabase() {
             mfaEnabled: false,
         });
 
-        // Employee users
         const employees = await User.create([
             {
                 username: 'sarah.johnson',
@@ -118,7 +113,6 @@ async function initializeDatabase() {
 
         console.log('✅ Created users:', [admin.username, ...employees.map(e => e.username)]);
 
-        // Create default resources
         console.log('🔐 Creating default resources...');
 
         const resources = await Resource.create([
@@ -134,10 +128,7 @@ async function initializeDatabase() {
                 mfaRequired: false,
                 allowedRoles: ['employee', 'admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'IT Department',
-                    dataClassification: 'internal',
-                },
+                metadata: { owner: 'IT Department', dataClassification: 'internal' },
             },
             {
                 resourceId: 'git-repository',
@@ -152,10 +143,7 @@ async function initializeDatabase() {
                 mfaRequired: false,
                 allowedRoles: ['employee', 'admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'Engineering',
-                    dataClassification: 'confidential',
-                },
+                metadata: { owner: 'Engineering', dataClassification: 'confidential' },
             },
             {
                 resourceId: 'prod-console',
@@ -170,11 +158,7 @@ async function initializeDatabase() {
                 mfaRequired: true,
                 allowedRoles: ['admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'DevOps',
-                    dataClassification: 'restricted',
-                    complianceRequirements: ['SOC2', 'ISO27001'],
-                },
+                metadata: { owner: 'DevOps', dataClassification: 'restricted', complianceRequirements: ['SOC2', 'ISO27001'] },
             },
             {
                 resourceId: 'hr-portal',
@@ -189,11 +173,7 @@ async function initializeDatabase() {
                 mfaRequired: false,
                 allowedRoles: ['admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'Human Resources',
-                    dataClassification: 'confidential',
-                    complianceRequirements: ['GDPR', 'HIPAA'],
-                },
+                metadata: { owner: 'Human Resources', dataClassification: 'confidential', complianceRequirements: ['GDPR', 'HIPAA'] },
             },
             {
                 resourceId: 'admin-dashboard',
@@ -207,10 +187,7 @@ async function initializeDatabase() {
                 mfaRequired: true,
                 allowedRoles: ['admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'IT Security',
-                    dataClassification: 'restricted',
-                },
+                metadata: { owner: 'IT Security', dataClassification: 'restricted' },
             },
             {
                 resourceId: 'employee-dashboard',
@@ -224,16 +201,12 @@ async function initializeDatabase() {
                 mfaRequired: false,
                 allowedRoles: ['employee', 'admin'],
                 status: 'active',
-                metadata: {
-                    owner: 'HR',
-                    dataClassification: 'internal',
-                },
+                metadata: { owner: 'HR', dataClassification: 'internal' },
             },
         ]);
 
         console.log('✅ Created resources:', resources.map(r => r.name));
 
-        // Create default trust policy
         console.log('📋 Creating default trust policy...');
 
         const policy = await TrustPolicy.create({
@@ -242,57 +215,18 @@ async function initializeDatabase() {
             description: 'Standard zero-trust evaluation policy',
             version: '1.0.0',
             status: 'active',
-            thresholds: {
-                allowThreshold: 70,
-                mfaThreshold: 40,
-                blockThreshold: 40,
-            },
-            factorWeights: {
-                deviceTrust: 30,
-                networkSecurity: 25,
-                resourceSensitivity: 20,
-                userBehavior: 15,
-                timeContext: 10,
-            },
-            deviceScoring: {
-                managed: 40,
-                personal: 10,
-                unverified: -20,
-                compromised: -50,
-            },
-            networkScoring: {
-                corporate: 30,
-                home: 15,
-                public: -10,
-                vpn: 20,
-            },
-            resourceMultipliers: {
-                standard: 1.0,
-                elevated: 1.3,
-                critical: 1.5,
-            },
-            behavioralRules: {
-                newDevicePenalty: -15,
-                unusualLocationPenalty: -10,
-                offHoursPenalty: -5,
-                rapidAccessPenalty: -10,
-            },
-            mfaRules: {
-                alwaysRequireForCritical: true,
-                requireForNewDevice: true,
-                requireForUnusualLocation: false,
-                requireAfterDays: 30,
-            },
-            appliesTo: {
-                roles: ['employee', 'admin'],
-                resources: [],
-                departments: [],
-            },
+            thresholds: { allowThreshold: 70, mfaThreshold: 40, blockThreshold: 40 },
+            factorWeights: { deviceTrust: 30, networkSecurity: 25, resourceSensitivity: 20, userBehavior: 15, timeContext: 10 },
+            deviceScoring: { managed: 40, personal: 10, unverified: -20, compromised: -50 },
+            networkScoring: { corporate: 30, home: 15, public: -10, vpn: 20 },
+            resourceMultipliers: { standard: 1.0, elevated: 1.3, critical: 1.5 },
+            behavioralRules: { newDevicePenalty: -15, unusualLocationPenalty: -10, offHoursPenalty: -5, rapidAccessPenalty: -10 },
+            mfaRules: { alwaysRequireForCritical: true, requireForNewDevice: true, requireForUnusualLocation: false, requireAfterDays: 30 },
+            appliesTo: { roles: ['employee', 'admin'], resources: [], departments: [] },
             effectiveFrom: new Date(),
         });
 
         console.log('✅ Created trust policy:', policy.name);
-
         console.log('\n🎉 Database initialization complete!');
         console.log('\n📝 User credentials:');
         console.log('   Admin:           username: sora              | password: sora');
@@ -313,5 +247,4 @@ async function initializeDatabase() {
     }
 }
 
-// Run initialization
 initializeDatabase();

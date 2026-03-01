@@ -1,65 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface ITrustPolicy extends Document {
-    policyId: string;
-    name: string;
-    description?: string;
-    version: string;
-    status: 'active' | 'draft' | 'archived';
-    thresholds: {
-        allowThreshold: number;
-        mfaThreshold: number;
-        blockThreshold: number;
-    };
-    factorWeights: {
-        deviceTrust: number;
-        networkSecurity: number;
-        resourceSensitivity: number;
-        userBehavior: number;
-        timeContext: number;
-    };
-    deviceScoring: {
-        managed: number;
-        personal: number;
-        unverified: number;
-        compromised: number;
-    };
-    networkScoring: {
-        corporate: number;
-        home: number;
-        public: number;
-        vpn: number;
-    };
-    resourceMultipliers: {
-        standard: number;
-        elevated: number;
-        critical: number;
-    };
-    behavioralRules: {
-        newDevicePenalty: number;
-        unusualLocationPenalty: number;
-        offHoursPenalty: number;
-        rapidAccessPenalty: number;
-    };
-    mfaRules: {
-        alwaysRequireForCritical: boolean;
-        requireForNewDevice: boolean;
-        requireForUnusualLocation: boolean;
-        requireAfterDays: number;
-    };
-    appliesTo: {
-        roles: string[];
-        resources: mongoose.Types.ObjectId[];
-        departments: string[];
-    };
-    createdAt: Date;
-    updatedAt: Date;
-    createdBy?: mongoose.Types.ObjectId;
-    effectiveFrom?: Date;
-    effectiveUntil?: Date;
-}
-
-const TrustPolicySchema = new Schema<ITrustPolicy>(
+const TrustPolicySchema = new Schema(
     {
         policyId: {
             type: String,
@@ -140,4 +81,4 @@ TrustPolicySchema.index({ policyId: 1 });
 TrustPolicySchema.index({ status: 1, effectiveFrom: 1 });
 TrustPolicySchema.index({ version: -1 });
 
-export const TrustPolicy = mongoose.model<ITrustPolicy>('TrustPolicy', TrustPolicySchema);
+export const TrustPolicy = mongoose.model('TrustPolicy', TrustPolicySchema);

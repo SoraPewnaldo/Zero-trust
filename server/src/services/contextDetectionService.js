@@ -1,26 +1,11 @@
-import { Request } from 'express';
 import UAParser from 'ua-parser-js';
 import crypto from 'crypto';
-
-export interface DetectedContext {
-    deviceType: 'managed' | 'personal';
-    networkType: 'corporate' | 'home' | 'public';
-    ipAddress: string;
-    userAgent: string;
-    deviceInfo: {
-        platform?: string;
-        browser?: string;
-        osVersion?: string;
-        browserVersion?: string;
-    };
-    deviceFingerprint: string;
-}
 
 export class ContextDetectionService {
     /**
      * Detect context from request
      */
-    static detectContext(req: Request): DetectedContext {
+    static detectContext(req) {
         const userAgent = req.headers['user-agent'] || '';
         const ipAddress = this.getClientIp(req);
         const parser = new UAParser(userAgent);
@@ -56,13 +41,13 @@ export class ContextDetectionService {
     /**
      * Get client IP address
      */
-    private static getClientIp(req: Request): string {
+    static getClientIp(req) {
         const forwarded = req.headers['x-forwarded-for'];
         const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0];
 
         return (
             ip ||
-            req.headers['x-real-ip'] as string ||
+            req.headers['x-real-ip'] ||
             req.socket?.remoteAddress ||
             'unknown'
         );
@@ -71,8 +56,7 @@ export class ContextDetectionService {
     /**
      * Generate device fingerprint
      */
-    private static generateDeviceFingerprint(userAgent: string, ipAddress: string): string {
-        // Simplified fingerprint - in production, use more sophisticated methods
+    static generateDeviceFingerprint(userAgent, ipAddress) {
         return crypto
             .createHash('sha256')
             .update(`${userAgent}-${ipAddress}`)
@@ -82,11 +66,8 @@ export class ContextDetectionService {
 
     /**
      * Detect device type
-     * In production, check against device registry
      */
-    private static detectDeviceType(userAgent: string): 'managed' | 'personal' {
-        // Simplified logic - check for corporate device indicators
-        // In production, maintain a device registry
+    static detectDeviceType(userAgent) {
         const corporateIndicators = ['CorporateDevice', 'MDM', 'IntuneMAM'];
         const isManaged = corporateIndicators.some((indicator) =>
             userAgent.includes(indicator)
@@ -96,22 +77,15 @@ export class ContextDetectionService {
 
     /**
      * Detect network type based on IP
-     * In production, use IP geolocation and corporate IP ranges
      */
-    private static detectNetworkType(ipAddress: string): 'corporate' | 'home' | 'public' {
-        // Simplified logic - check against corporate IP ranges
-        // In production, maintain corporate IP whitelist
-
-        // Example corporate IP ranges (replace with actual ranges)
+    static detectNetworkType(ipAddress) {
         const corporateRanges = ['10.0.', '192.168.1.'];
-
         const isCorporate = corporateRanges.some((range) => ipAddress.startsWith(range));
 
         if (isCorporate) {
             return 'corporate';
         }
 
-        // Check for common home network ranges
         const homeRanges = ['192.168.', '10.'];
         const isHome = homeRanges.some((range) => ipAddress.startsWith(range));
 

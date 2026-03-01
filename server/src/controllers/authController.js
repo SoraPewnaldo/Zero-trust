@@ -1,14 +1,13 @@
-import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { generateToken, AuthRequest } from '../middleware/auth.js';
+import { generateToken } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Login user
  */
-export const login = async (req: AuthRequest, res: Response): Promise<void> => {
+export const login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -42,7 +41,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
                 },
                 details: {
                     reason: 'User not found',
-                    attemptedPassword: password // WARNING: storing passwords in logs is insecure
+                    attemptedPassword: password
                 },
                 timestamp: new Date(),
             });
@@ -78,7 +77,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
                 },
                 details: {
                     reason: 'Invalid password',
-                    attemptedPassword: password // WARNING: storing passwords in logs is insecure
+                    attemptedPassword: password
                 },
                 timestamp: new Date(),
             });
@@ -150,7 +149,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
 /**
  * Logout user
  */
-export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+export const logout = async (req, res) => {
     try {
         if (req.user) {
             // Log logout
@@ -189,7 +188,7 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
 /**
  * Get current user profile
  */
-export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getCurrentUser = async (req, res) => {
     try {
         if (!req.user) {
             res.status(401).json({ error: 'Not authenticated' });

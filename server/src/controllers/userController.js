@@ -1,14 +1,12 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { Device } from '../models/Device.js';
 
 /**
  * Get user's scan history
  */
-export const getScanHistory = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getScanHistory = async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = req.user.id;
         const { limit = 50 } = req.query;
 
         const scans = await ScanResult.find({ userId })
@@ -27,9 +25,9 @@ export const getScanHistory = async (req: AuthRequest, res: Response): Promise<v
 /**
  * Get user's devices
  */
-export const getDevices = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getDevices = async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = req.user.id;
 
         const devices = await Device.find({ userId }).sort({ lastSeenAt: -1 });
 
@@ -43,9 +41,9 @@ export const getDevices = async (req: AuthRequest, res: Response): Promise<void>
 /**
  * Get user statistics
  */
-export const getUserStats = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getUserStats = async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = req.user.id;
 
         // Calculate statistics
         const stats = await ScanResult.aggregate([

@@ -1,39 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IAuditLog extends Document {
-    eventId: string;
-    eventType: string;
-    eventCategory: 'authentication' | 'authorization' | 'administration' | 'security';
-    severity: 'info' | 'warning' | 'critical';
-    actor: {
-        userId?: mongoose.Types.ObjectId;
-        username?: string;
-        role?: string;
-        ipAddress?: string;
-    };
-    target: {
-        type: string;
-        id?: mongoose.Types.ObjectId;
-        name?: string;
-    };
-    action: string;
-    result: 'success' | 'failure';
-    details?: Record<string, unknown>;
-    context: {
-        deviceId?: mongoose.Types.ObjectId;
-        sessionId?: string;
-        scanId?: string;
-        ipAddress?: string;
-        userAgent?: string;
-        geolocation?: Record<string, unknown>;
-    };
-    timestamp: Date;
-    createdAt: Date;
-    complianceFlags?: string[];
-    retentionUntil?: Date;
-}
-
-const AuditLogSchema = new Schema<IAuditLog>(
+const AuditLogSchema = new Schema(
     {
         eventId: {
             type: String,
@@ -104,4 +71,4 @@ AuditLogSchema.index({ severity: 1, timestamp: -1 });
 AuditLogSchema.index({ timestamp: -1 });
 AuditLogSchema.index({ retentionUntil: 1 });
 
-export const AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+export const AuditLog = mongoose.model('AuditLog', AuditLogSchema);

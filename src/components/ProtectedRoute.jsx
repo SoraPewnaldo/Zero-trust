@@ -1,13 +1,7 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: UserRole;
-  requireVerification?: boolean;
-}
-
-export default function ProtectedRoute({ children, requiredRole, requireVerification = true }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredRole, requireVerification = true }) {
   const { isAuthenticated, user, isVerified } = useAuth();
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;

@@ -1,22 +1,18 @@
-import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import { AuthRequest } from '../middleware/auth.js';
 import { Device } from '../models/Device.js';
 import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
-import { IDecisionFactor } from '../models/ScanResult.js';
-
 
 /**
  * Initiate trust scan
  */
-export const initiateScan = async (req: AuthRequest, res: Response): Promise<void> => {
+export const initiateScan = async (req, res) => {
     try {
         const { resourceId } = req.body;
-        const userId = req.user!.id;
+        const userId = req.user.id;
 
         if (!resourceId) {
             res.status(400).json({ error: 'Resource ID required' });
@@ -85,15 +81,15 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
         }
 
         // Check if user role is allowed
-        if (!resource.allowedRoles.includes(req.user!.role)) {
+        if (!resource.allowedRoles.includes(req.user.role)) {
             res.status(403).json({ error: 'User role not authorized for this resource' });
             return;
         }
 
         // --- CALL PYTHON TRUST ENGINE (PDP) ---
         let trustScore = 0;
-        const factors: IDecisionFactor[] = [];
-        let engineDetails: Record<string, unknown> = {};
+        const factors = [];
+        let engineDetails = {};
 
         try {
             console.log('🔄 Calling Python Trust Engine (PDP)...');
@@ -140,13 +136,12 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
         } catch (engineError) {
             console.error('❌ Failed to contact Python Trust Engine:', engineError);
             // Fallback for demo/dev if engine is offline
-            trustScore = 65; // Default to "Mediocre" score to trigger logic testing
+            trustScore = 65;
             factors.push({ name: 'Trust Engine Offline', category: 'device', status: 'warn', score: 0, weight: 0, impact: 0, details: 'Using fallback score' });
         }
 
         // --- DYNAMIC GATEKEEPER DECISION ---
-        // Uses the fetched policy instead of hardcoded values
-        let decision: 'allow' | 'blocked' | 'mfa_required' = 'blocked';
+        let decision = 'blocked';
         let decisionReason = '';
         let mfaRequired = false;
 
@@ -175,17 +170,14 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
             decisionReason = 'Trust score below minimum threshold';
         }
 
-        // 4. Override: If MFA is required but user hasn't set it up, what do we do?
-        // Current logic: We still ask for it (Step-Up). 
-        // In a real app we'd redirect to setup. Here we assume the "Test Code" is available.
+        // 4. Override: MFA required overrides allow
         if (mfaRequired && decision !== 'blocked') {
             decision = 'mfa_required';
         }
 
         // Save scanned OS info if available from Engine
-        const engineDetailsObj = engineDetails as Record<string, unknown>;
-        if (typeof engineDetailsObj.os_version === 'string') {
-            device.osVersion = engineDetailsObj.os_version;
+        if (typeof engineDetails.os_version === 'string') {
+            device.osVersion = engineDetails.os_version;
             await device.save();
         }
 
@@ -228,9 +220,9 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
             eventCategory: 'authorization',
             severity: decision === 'blocked' ? 'warning' : 'info',
             actor: {
-                userId: req.user!.id,
-                username: req.user!.username,
-                role: req.user!.role,
+                userId: req.user.id,
+                username: req.user.username,
+                role: req.user.role,
                 ipAddress: context.ipAddress,
             },
             target: {
@@ -282,9 +274,9 @@ export const initiateScan = async (req: AuthRequest, res: Response): Promise<voi
 };
 
 /**
- * Verify MFA and complete scan (unchanged)
+ * Verify MFA and complete scan
  */
-export const verifyMFA = async (req: AuthRequest, res: Response): Promise<void> => {
+export const verifyMFA = async (req, res) => {
     try {
         const { scanId, mfaCode } = req.body;
 
@@ -301,7 +293,7 @@ export const verifyMFA = async (req: AuthRequest, res: Response): Promise<void> 
         }
 
         // Verify scan belongs to user
-        if (scanResult.userId.toString() !== req.user!.id) {
+        if (scanResult.userId.toString() !== req.user.id) {
             res.status(403).json({ error: 'Unauthorized' });
             return;
         }
@@ -339,9 +331,9 @@ export const verifyMFA = async (req: AuthRequest, res: Response): Promise<void> 
             eventCategory: 'authentication',
             severity: 'info',
             actor: {
-                userId: req.user!.id,
-                username: req.user!.username,
-                role: req.user!.role,
+                userId: req.user.id,
+                username: req.user.username,
+                role: req.user.role,
             },
             target: {
                 type: 'scan',
@@ -367,9 +359,9 @@ export const verifyMFA = async (req: AuthRequest, res: Response): Promise<void> 
 };
 
 /**
- * Get scan status (unchanged)
+ * Get scan status
  */
-export const getScanStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getScanStatus = async (req, res) => {
     try {
         const { scanId } = req.params;
 
@@ -383,7 +375,7 @@ export const getScanStatus = async (req: AuthRequest, res: Response): Promise<vo
         }
 
         // Verify scan belongs to user
-        if (scanResult.userId.toString() !== req.user!.id) {
+        if (scanResult.userId.toString() !== req.user.id) {
             res.status(403).json({ error: 'Unauthorized' });
             return;
         }

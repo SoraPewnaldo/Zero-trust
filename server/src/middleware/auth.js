@@ -1,23 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/index.js';
-
-export interface AuthRequest extends Request {
-    user?: {
-        id: string;
-        username: string;
-        role: string;
-    };
-}
 
 /**
  * Verify JWT token middleware
  */
-export const authenticateToken = (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-): void => {
+export const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -27,7 +14,7 @@ export const authenticateToken = (
     }
 
     try {
-        const decoded = jwt.verify(token, config.jwt.secret) as { id: string; username: string; role: string };
+        const decoded = jwt.verify(token, config.jwt.secret);
         req.user = {
             id: decoded.id,
             username: decoded.username,
@@ -43,8 +30,8 @@ export const authenticateToken = (
 /**
  * Role-based access control middleware
  */
-export const requireRole = (...allowedRoles: string[]) => {
-    return (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const requireRole = (...allowedRoles) => {
+    return (req, res, next) => {
         if (!req.user) {
             res.status(401).json({ error: 'Authentication required' });
             return;
@@ -62,7 +49,7 @@ export const requireRole = (...allowedRoles: string[]) => {
 /**
  * Generate JWT token
  */
-export const generateToken = (user: { id: string; username: string; role: string }): string => {
+export const generateToken = (user) => {
     return jwt.sign(
         {
             id: user.id,
@@ -72,6 +59,6 @@ export const generateToken = (user: { id: string; username: string; role: string
         config.jwt.secret,
         {
             expiresIn: config.jwt.expiresIn,
-        } as jwt.SignOptions
+        }
     );
 };

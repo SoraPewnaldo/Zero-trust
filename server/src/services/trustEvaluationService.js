@@ -1,34 +1,12 @@
-import { TrustPolicy, ITrustPolicy } from '../models/TrustPolicy.js';
-import { Resource, IResource } from '../models/Resource.js';
-import { Device, IDevice } from '../models/Device.js';
-import { IDecisionFactor } from '../models/ScanResult.js';
-
-export interface TrustEvaluationInput {
-    userId: string;
-    deviceId: string;
-    resourceId: string;
-    context: {
-        deviceType: 'managed' | 'personal';
-        networkType: 'corporate' | 'home' | 'public';
-        ipAddress: string;
-    };
-    device?: IDevice;
-    resource?: IResource;
-}
-
-export interface TrustEvaluationResult {
-    trustScore: number;
-    decision: 'allow' | 'mfa_required' | 'blocked';
-    decisionReason: string;
-    factors: IDecisionFactor[];
-    mfaRequired: boolean;
-}
+import { TrustPolicy } from '../models/TrustPolicy.js';
+import { Resource } from '../models/Resource.js';
+import { Device } from '../models/Device.js';
 
 export class TrustEvaluationService {
     /**
      * Evaluate trust score and make access decision
      */
-    static async evaluateTrust(input: TrustEvaluationInput): Promise<TrustEvaluationResult> {
+    static async evaluateTrust(input) {
         // Get active trust policy
         const policy = await this.getActivePolicy();
 
@@ -45,7 +23,7 @@ export class TrustEvaluationService {
         }
 
         // Calculate individual factor scores
-        const factors: IDecisionFactor[] = [];
+        const factors = [];
         let baseScore = 50; // Start with neutral score
 
         // 1. Device Trust Factor
@@ -76,8 +54,8 @@ export class TrustEvaluationService {
         trustScore = Math.max(0, Math.min(100, trustScore * multiplier));
 
         // Make decision based on thresholds
-        let decision: 'allow' | 'mfa_required' | 'blocked';
-        let decisionReason: string;
+        let decision;
+        let decisionReason;
         let mfaRequired = false;
 
         if (resource.mfaRequired || policy.mfaRules.alwaysRequireForCritical && resource.sensitivity === 'critical') {
@@ -108,7 +86,7 @@ export class TrustEvaluationService {
     /**
      * Get active trust policy
      */
-    private static async getActivePolicy(): Promise<ITrustPolicy> {
+    static async getActivePolicy() {
         const policy = await TrustPolicy.findOne({ status: 'active' }).sort({ createdAt: -1 });
         if (!policy) {
             throw new Error('No active trust policy found');
@@ -119,17 +97,12 @@ export class TrustEvaluationService {
     /**
      * Evaluate device trust
      */
-    private static evaluateDeviceTrust(
-        device: IDevice,
-        contextDeviceType: string,
-        policy: ITrustPolicy
-    ): IDecisionFactor {
+    static evaluateDeviceTrust(device, contextDeviceType, policy) {
         const weight = policy.factorWeights.deviceTrust;
         let score = 0;
-        let status: 'pass' | 'warn' | 'fail' = 'fail';
+        let status = 'fail';
         let details = '';
 
-        // Score based on device type
         if (device.isManaged || contextDeviceType === 'managed') {
             score = policy.deviceScoring.managed;
             status = 'pass';
@@ -164,13 +137,10 @@ export class TrustEvaluationService {
     /**
      * Evaluate network security
      */
-    private static evaluateNetworkSecurity(
-        networkType: string,
-        policy: ITrustPolicy
-    ): IDecisionFactor {
+    static evaluateNetworkSecurity(networkType, policy) {
         const weight = policy.factorWeights.networkSecurity;
         let score = 0;
-        let status: 'pass' | 'warn' | 'fail' = 'fail';
+        let status = 'fail';
         let details = '';
 
         switch (networkType) {
@@ -211,16 +181,12 @@ export class TrustEvaluationService {
     /**
      * Evaluate resource sensitivity
      */
-    private static evaluateResourceSensitivity(
-        resource: IResource,
-        policy: ITrustPolicy
-    ): IDecisionFactor {
+    static evaluateResourceSensitivity(resource, policy) {
         const weight = policy.factorWeights.resourceSensitivity;
         let score = 0;
-        let status: 'pass' | 'warn' | 'fail' = 'pass';
+        let status = 'pass';
         let details = '';
 
-        // Higher sensitivity = higher requirements (negative score adjustment)
         switch (resource.sensitivity) {
             case 'standard':
                 score = 10;
@@ -255,18 +221,14 @@ export class TrustEvaluationService {
     /**
      * Evaluate user behavior (simplified)
      */
-    private static evaluateUserBehavior(
-        device: IDevice,
-        policy: ITrustPolicy
-    ): IDecisionFactor {
+    static evaluateUserBehavior(device, policy) {
         const weight = policy.factorWeights.userBehavior;
         let score = 0;
-        let status: 'pass' | 'warn' | 'fail' = 'pass';
+        let status = 'pass';
         let details = '';
 
-        // Check if new device
         const deviceAge = Date.now() - device.firstSeenAt.getTime();
-        const isNewDevice = deviceAge < 24 * 60 * 60 * 1000; // Less than 24 hours
+        const isNewDevice = deviceAge < 24 * 60 * 60 * 1000;
 
         if (isNewDevice) {
             score = policy.behavioralRules.newDevicePenalty;

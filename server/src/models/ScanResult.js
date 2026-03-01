@@ -1,60 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IDecisionFactor {
-    name: string;
-    category: 'device' | 'network' | 'resource' | 'user' | 'behavioral';
-    status: 'pass' | 'warn' | 'fail';
-    score: number;
-    weight: number;
-    impact: number;
-    details?: string;
-}
-
-export interface IScanResult extends Document {
-    scanId: string;
-    userId: mongoose.Types.ObjectId;
-    deviceId: mongoose.Types.ObjectId;
-    resourceId: mongoose.Types.ObjectId;
-    trustScore: number;
-    decision: 'allow' | 'mfa_required' | 'blocked';
-    decisionReason?: string;
-    context: {
-        deviceType: string;
-        networkType: string;
-        ipAddress?: string;
-        geolocation?: {
-            country?: string;
-            city?: string;
-            latitude?: number;
-            longitude?: number;
-        };
-        timestamp: Date;
-        userAgent?: string;
-        sessionId?: string;
-    };
-    factors: IDecisionFactor[];
-    mfaRequired: boolean;
-    mfaVerified: boolean;
-    mfaMethod?: string;
-    mfaAttempts?: number;
-    mfaVerifiedAt?: Date;
-    accessGranted: boolean;
-    accessGrantedAt?: Date;
-    accessDeniedReason?: string;
-    sessionDuration?: number;
-    createdAt: Date;
-    updatedAt: Date;
-    completedAt?: Date;
-    riskFlags?: string[];
-    anomalyScore?: number;
-    metadata?: {
-        scanDuration?: number;
-        retryCount?: number;
-        policyVersion?: string;
-    };
-}
-
-const ScanResultSchema = new Schema<IScanResult>(
+const ScanResultSchema = new Schema(
     {
         scanId: {
             type: String,
@@ -164,4 +110,4 @@ ScanResultSchema.index({ 'context.ipAddress': 1 });
 ScanResultSchema.index({ createdAt: -1 });
 ScanResultSchema.index({ userId: 1, deviceId: 1, createdAt: -1 });
 
-export const ScanResult = mongoose.model<IScanResult>('ScanResult', ScanResultSchema);
+export const ScanResult = mongoose.model('ScanResult', ScanResultSchema);
