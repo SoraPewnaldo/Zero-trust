@@ -13,5 +13,5 @@ COPY . .
 # Expose backend port
 EXPOSE 3001
 
-# Run using the dev script (requires tsx/ts-node setup in package.json)
+# Run using Node.js directly (plain JavaScript, no TypeScript compiler needed)
 CMD ["npm", "run", "dev"]

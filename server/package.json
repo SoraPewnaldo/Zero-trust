@@ -10,6 +10,7 @@
         "init-db": "node src/scripts/initDb.js",
         "test": "vitest run",
         "test:watch": "vitest",
+        "build": "node --check src/server.js && echo Build validation passed",
         "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint src --ext .js -c .eslintrc.cjs"
     },
     "keywords": [
