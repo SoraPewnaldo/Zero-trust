@@ -1,10 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Newspaper, Calendar, Users, Megaphone } from 'lucide-react';
-
 export default function InternalDashboard() {
-    return (
-        <DashboardLayout title="INTERNAL DASHBOARD" subtitle="COMPANY INTRANET & NEWS">
+  return <DashboardLayout title="INTERNAL DASHBOARD" subtitle="COMPANY INTRANET & NEWS">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Main News Feed */}
                 <div className="md:col-span-2 space-y-6">
@@ -104,6 +102,5 @@ export default function InternalDashboard() {
                     </Card>
                 </div>
             </div>
-        </DashboardLayout>
-    );
+        </DashboardLayout>;
 }

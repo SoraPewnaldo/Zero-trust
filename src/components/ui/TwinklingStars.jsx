@@ -1,8 +1,6 @@
 import React from 'react';
-
 export const TwinklingStars = () => {
-    return (
-        <div className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-black">
+  return <div className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-black">
             <div className="absolute inset-0 stars-layer-1"></div>
             <div className="absolute inset-0 stars-layer-2"></div>
             <div className="absolute inset-0 stars-layer-3"></div>
@@ -73,6 +71,5 @@ export const TwinklingStars = () => {
           background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 60%);
         }
       `}</style>
-        </div>
-    );
+        </div>;
 };

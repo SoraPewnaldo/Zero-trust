@@ -1,25 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-
-export default function DashboardLayout({ title, subtitle, children }) {
-  const { user, logout } = useAuth();
+export default function DashboardLayout({
+  title,
+  subtitle,
+  children
+}) {
+  const {
+    user,
+    logout
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleLogout = () => {
     logout();
     navigate('/');
   };
-
-  return (
-    <main className="relative min-h-screen">
+  return <main className="relative min-h-screen">
       {/* Top Header */}
       <div className="border-b border-white/20">
         <div className="container mx-auto px-4 lg:px-8 py-3 lg:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 lg:gap-4">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => navigate('/')}
-            >
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-6 h-6 rounded bg-white text-black flex items-center justify-center font-bold text-sm">ZI</div>
               <span className="font-mono text-lg font-bold tracking-widest italic transform -skew-x-12">
                 zeroIAM
@@ -33,10 +33,7 @@ export default function DashboardLayout({ title, subtitle, children }) {
             <span className="text-[10px] font-mono text-white/50 truncate max-w-[120px] sm:max-w-none">
               {user?.username.toUpperCase()} [{user?.role.toUpperCase()}]
             </span>
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1 text-[10px] font-mono text-white/60 border border-white/20 hover:bg-white hover:text-black transition-all duration-200 shrink-0"
-            >
+            <button onClick={handleLogout} className="px-3 py-1 text-[10px] font-mono text-white/60 border border-white/20 hover:bg-white hover:text-black transition-all duration-200 shrink-0">
               LOGOUT
             </button>
           </div>
@@ -52,7 +49,9 @@ export default function DashboardLayout({ title, subtitle, children }) {
             <span className="text-white text-[10px] font-mono tracking-wider">◈</span>
             <div className="flex-1 h-px bg-white/20"></div>
           </div>
-          <h1 className="text-xl lg:text-3xl font-bold text-white font-mono tracking-wider" style={{ letterSpacing: '0.1em' }}>
+          <h1 className="text-xl lg:text-3xl font-bold text-white font-mono tracking-wider" style={{
+          letterSpacing: '0.1em'
+        }}>
             {title}
           </h1>
           <p className="text-[10px] lg:text-xs text-white/40 font-mono mt-1">{subtitle}</p>
@@ -74,6 +73,5 @@ export default function DashboardLayout({ title, subtitle, children }) {
           </div>
         </div>
       </div>
-    </main>
-  );
+    </main>;
 }

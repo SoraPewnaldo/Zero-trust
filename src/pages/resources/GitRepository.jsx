@@ -1,10 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GitBranch, GitCommit, GitPullRequest, Star, Clock } from 'lucide-react';
-
 export default function GitRepository() {
-    return (
-        <DashboardLayout title="GIT REPOSITORY" subtitle="SOURCE CODE MANAGEMENT">
+  return <DashboardLayout title="GIT REPOSITORY" subtitle="SOURCE CODE MANAGEMENT">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Repositories List */}
@@ -16,13 +14,27 @@ export default function GitRepository() {
                         </button>
                     </div>
 
-                    {[
-                        { name: 'zeroiam-backend', lang: 'TypeScript', stars: 124, updated: '2 hours ago' },
-                        { name: 'zeroiam-frontend', lang: 'React', stars: 98, updated: '4 hours ago' },
-                        { name: 'trust-engine-pdp', lang: 'Python', stars: 45, updated: 'Yesterday' },
-                        { name: 'infrastructure-iac', lang: 'HCL', stars: 12, updated: '3 days ago' }
-                    ].map((repo, idx) => (
-                        <div key={idx} className="p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors group cursor-pointer">
+                    {[{
+          name: 'zeroiam-backend',
+          lang: 'TypeScript',
+          stars: 124,
+          updated: '2 hours ago'
+        }, {
+          name: 'zeroiam-frontend',
+          lang: 'React',
+          stars: 98,
+          updated: '4 hours ago'
+        }, {
+          name: 'trust-engine-pdp',
+          lang: 'Python',
+          stars: 45,
+          updated: 'Yesterday'
+        }, {
+          name: 'infrastructure-iac',
+          lang: 'HCL',
+          stars: 12,
+          updated: '3 days ago'
+        }].map((repo, idx) => <div key={idx} className="p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors group cursor-pointer">
                             <div className="flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
@@ -36,8 +48,7 @@ export default function GitRepository() {
                                     <span className="text-xs">{repo.stars}</span>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        </div>)}
                 </div>
 
                 {/* Activity Feed */}
@@ -50,12 +61,28 @@ export default function GitRepository() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {[
-                                { user: 'sora', action: 'pushed to', target: 'main', repo: 'zeroiam-backend', time: '10m ago', icon: GitCommit },
-                                { user: 'sarah.j', action: 'opened PR', target: 'feat/mfa', repo: 'zeroiam-frontend', time: '1h ago', icon: GitPullRequest },
-                                { user: 'mike.c', action: 'merged', target: 'fix/auth', repo: 'trust-engine', time: '3h ago', icon: GitBranch },
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-3 text-sm">
+                            {[{
+              user: 'sora',
+              action: 'pushed to',
+              target: 'main',
+              repo: 'zeroiam-backend',
+              time: '10m ago',
+              icon: GitCommit
+            }, {
+              user: 'sarah.j',
+              action: 'opened PR',
+              target: 'feat/mfa',
+              repo: 'zeroiam-frontend',
+              time: '1h ago',
+              icon: GitPullRequest
+            }, {
+              user: 'mike.c',
+              action: 'merged',
+              target: 'fix/auth',
+              repo: 'trust-engine',
+              time: '3h ago',
+              icon: GitBranch
+            }].map((item, i) => <div key={i} className="flex gap-3 text-sm">
                                     <div className="mt-1"><item.icon size={14} className="text-white/40" /></div>
                                     <div>
                                         <p className="text-white/80">
@@ -63,8 +90,7 @@ export default function GitRepository() {
                                         </p>
                                         <p className="text-xs text-white/40">on {item.repo} • {item.time}</p>
                                     </div>
-                                </div>
-                            ))}
+                                </div>)}
                         </CardContent>
                     </Card>
 
@@ -86,6 +112,5 @@ export default function GitRepository() {
                 </div>
 
             </div>
-        </DashboardLayout>
-    );
+        </DashboardLayout>;
 }

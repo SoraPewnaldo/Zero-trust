@@ -3,7 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 /** Redirects authenticated users to their role-based dashboard */
 export default function DashboardRedirect() {
-  const { user, isAuthenticated } = useAuth();
+  const {
+    user,
+    isAuthenticated
+  } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <Navigate to="/verify" replace />;
 }

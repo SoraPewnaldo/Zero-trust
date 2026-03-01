@@ -1,10 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, FileText, Calendar, DollarSign, PieChart } from 'lucide-react';
-
 export default function HrPortal() {
-    return (
-        <DashboardLayout title="HR PORTAL" subtitle="HUMAN RESOURCES MANAGEMENT">
+  return <DashboardLayout title="HR PORTAL" subtitle="HUMAN RESOURCES MANAGEMENT">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* Profile Summary */}
@@ -132,6 +130,5 @@ export default function HrPortal() {
                     </Card>
                 </div>
             </div>
-        </DashboardLayout>
-    );
+        </DashboardLayout>;
 }

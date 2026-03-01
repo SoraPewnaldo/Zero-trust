@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-
 export default function Login() {
-  const { login } = useAuth();
+  const {
+    login
+  } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -22,15 +22,13 @@ export default function Login() {
       } else {
         setError(result.error || 'AUTHENTICATION_FAILED — INVALID CREDENTIALS');
       }
-    } catch (err: unknown) {
+    } catch (err) {
       setLoading(false);
       console.error('Login submit error:', err);
-      setError(`CONNECTION_ERROR — ${(err as Error)?.message || 'UNKNOWN'}`);
+      setError(`CONNECTION_ERROR — ${err?.message || 'UNKNOWN'}`);
     }
   };
-
-  return (
-    <main className="relative min-h-screen overflow-hidden">
+  return <main className="relative min-h-screen overflow-hidden">
       {/* Corner Frame Accents */}
       <div className="absolute top-0 left-0 w-8 h-8 lg:w-12 lg:h-12 border-t-2 border-l-2 border-white/30 z-20"></div>
       <div className="absolute top-0 right-0 w-8 h-8 lg:w-12 lg:h-12 border-t-2 border-r-2 border-white/30 z-20"></div>
@@ -67,7 +65,9 @@ export default function Login() {
             <div className="flex-1 h-px bg-white"></div>
           </div>
 
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 font-mono tracking-wider" style={{ letterSpacing: '0.1em' }}>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 font-mono tracking-wider" style={{
+          letterSpacing: '0.1em'
+        }}>
             AUTHENTICATE
           </h1>
           <p className="text-xs text-white/50 font-mono mb-8">
@@ -77,38 +77,18 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[10px] font-mono text-white/60 mb-1 tracking-wider">USERNAME</label>
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
-                placeholder="enter username"
-                required
-              />
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20" placeholder="enter username" required />
             </div>
             <div>
               <label className="block text-[10px] font-mono text-white/60 mb-1 tracking-wider">PASSWORD</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
-                placeholder="enter password"
-                required
-              />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-transparent border border-white/30 text-white font-mono text-sm px-4 py-3 min-h-[44px] focus:outline-none focus:border-white transition-colors placeholder:text-white/20" placeholder="enter password" required />
             </div>
 
-            {error && (
-              <div className="border border-white/30 px-3 py-2 text-[10px] font-mono text-white/80 bg-white/5">
+            {error && <div className="border border-white/30 px-3 py-2 text-[10px] font-mono text-white/80 bg-white/5">
                 ⚠ {error}
-              </div>
-            )}
+              </div>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full relative px-6 py-3 min-h-[44px] bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group"
-            >
+            <button type="submit" disabled={loading} className="w-full relative px-6 py-3 min-h-[44px] bg-transparent text-white font-mono text-sm border border-white hover:bg-white hover:text-black transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group">
               <span className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
               <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-white opacity-0 group-hover:opacity-100 transition-opacity"></span>
               {loading ? 'VERIFYING...' : 'INITIATE ACCESS'}
@@ -127,6 +107,5 @@ export default function Login() {
       </div>
 
 
-    </main>
-  );
+    </main>;
 }

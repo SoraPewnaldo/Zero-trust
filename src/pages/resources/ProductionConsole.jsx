@@ -1,10 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Server, Activity, Globe, ShieldCheck, AlertTriangle } from 'lucide-react';
-
 export default function ProductionConsole() {
-    return (
-        <DashboardLayout title="PRODUCTION CLOUD CONSOLE" subtitle="AWS US-EAST-1 REGION">
+  return <DashboardLayout title="PRODUCTION CLOUD CONSOLE" subtitle="AWS US-EAST-1 REGION">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <Card className="bg-black/40 border-white/10 text-white">
                     <CardContent className="pt-6">
@@ -60,14 +58,32 @@ export default function ProductionConsole() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {[
-                                        { id: 'i-0a1b2c3d4e5f67890', type: 't3.micro', zone: 'us-east-1a', state: 'running' },
-                                        { id: 'i-0f9e8d7c6b5a43210', type: 'm5.large', zone: 'us-east-1b', state: 'running' },
-                                        { id: 'i-0123456789abcdef0', type: 'c5.xlarge', zone: 'us-east-1a', state: 'running' },
-                                        { id: 'i-0fedcba9876543210', type: 't3.small', zone: 'us-east-1c', state: 'stopped' },
-                                        { id: 'i-0a1b2c3d4e5f67891', type: 'r5.2xlarge', zone: 'us-east-1b', state: 'running' },
-                                    ].map((inst, i) => (
-                                        <tr key={i} className="hover:bg-white/5 transition-colors">
+                                    {[{
+                  id: 'i-0a1b2c3d4e5f67890',
+                  type: 't3.micro',
+                  zone: 'us-east-1a',
+                  state: 'running'
+                }, {
+                  id: 'i-0f9e8d7c6b5a43210',
+                  type: 'm5.large',
+                  zone: 'us-east-1b',
+                  state: 'running'
+                }, {
+                  id: 'i-0123456789abcdef0',
+                  type: 'c5.xlarge',
+                  zone: 'us-east-1a',
+                  state: 'running'
+                }, {
+                  id: 'i-0fedcba9876543210',
+                  type: 't3.small',
+                  zone: 'us-east-1c',
+                  state: 'stopped'
+                }, {
+                  id: 'i-0a1b2c3d4e5f67891',
+                  type: 'r5.2xlarge',
+                  zone: 'us-east-1b',
+                  state: 'running'
+                }].map((inst, i) => <tr key={i} className="hover:bg-white/5 transition-colors">
                                             <td className="p-3 font-mono text-blue-300">{inst.id}</td>
                                             <td className="p-3 text-white/70">{inst.type}</td>
                                             <td className="p-3 text-white/50">{inst.zone}</td>
@@ -80,8 +96,7 @@ export default function ProductionConsole() {
                                                 <ShieldCheck size={14} />
                                                 2/2 passed
                                             </td>
-                                        </tr>
-                                    ))}
+                                        </tr>)}
                                 </tbody>
                             </table>
                         </CardContent>
@@ -99,11 +114,11 @@ export default function ProductionConsole() {
                         <CardContent>
                             {/* Fake Chart Bars */}
                             <div className="h-32 flex items-end justify-between gap-1">
-                                {[40, 65, 30, 80, 55, 90, 45, 60, 75, 50, 85, 95].map((h, i) => (
-                                    <div key={i} className="w-full bg-blue-500/20 hover:bg-blue-500/40 transition-colors relative group">
-                                        <div style={{ height: `${h}%` }} className="bg-blue-500 w-full absolute bottom-0"></div>
-                                    </div>
-                                ))}
+                                {[40, 65, 30, 80, 55, 90, 45, 60, 75, 50, 85, 95].map((h, i) => <div key={i} className="w-full bg-blue-500/20 hover:bg-blue-500/40 transition-colors relative group">
+                                        <div style={{
+                  height: `${h}%`
+                }} className="bg-blue-500 w-full absolute bottom-0"></div>
+                                    </div>)}
                             </div>
                             <div className="flex justify-between text-xs text-white/30 mt-2 font-mono">
                                 <span>10:00</span>
@@ -133,6 +148,5 @@ export default function ProductionConsole() {
                     </Card>
                 </div>
             </div>
-        </DashboardLayout>
-    );
+        </DashboardLayout>;
 }

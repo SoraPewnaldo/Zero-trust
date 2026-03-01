@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '@/lib/api';
-
 const AuthContext = createContext(null);
-
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({
+  children
+}) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('authToken');
       const savedUser = localStorage.getItem('user');
       const savedVerification = sessionStorage.getItem('isVerified');
-
       if (token && savedUser) {
         try {
           // Verify token is still valid
@@ -32,14 +31,11 @@ export const AuthProvider = ({ children }) => {
       }
       setIsLoading(false);
     };
-
     checkAuth();
   }, []);
-
   const login = useCallback(async (username, password) => {
     try {
       const response = await api.auth.login(username, password);
-
       if (response.success && response.token) {
         // Store token and user data
         localStorage.setItem('authToken', response.token);
@@ -48,20 +44,22 @@ export const AuthProvider = ({ children }) => {
         // Reset verification on new login
         setIsVerified(false);
         sessionStorage.removeItem('isVerified');
-
         setUser({
           id: response.user.id,
           username: response.user.username,
           role: response.user.role,
           email: response.user.email,
           firstName: response.user.firstName,
-          lastName: response.user.lastName,
+          lastName: response.user.lastName
         });
-
-        return { success: true };
+        return {
+          success: true
+        };
       }
-
-      return { success: false, error: 'AUTHENTICATION_FAILED' };
+      return {
+        success: false,
+        error: 'AUTHENTICATION_FAILED'
+      };
     } catch (error) {
       console.error('Login error:', error);
       const errorMsg = error?.response?.data?.error || 'AUTHENTICATION_FAILED';
@@ -71,7 +69,6 @@ export const AuthProvider = ({ children }) => {
       };
     }
   }, []);
-
   const logout = useCallback(async () => {
     try {
       await api.auth.logout();
@@ -86,23 +83,24 @@ export const AuthProvider = ({ children }) => {
       setIsVerified(false);
     }
   }, []);
-
   const verify = useCallback(() => {
     setIsVerified(true);
     sessionStorage.setItem('isVerified', 'true');
   }, []);
-
   if (isLoading) {
     return null; // Or a loading spinner
   }
-
-  return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isVerified, login, logout, verify }}>
+  return <AuthContext.Provider value={{
+    user,
+    isAuthenticated: !!user,
+    isVerified,
+    login,
+    logout,
+    verify
+  }}>
       {children}
-    </AuthContext.Provider>
-  );
+    </AuthContext.Provider>;
 };
-
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

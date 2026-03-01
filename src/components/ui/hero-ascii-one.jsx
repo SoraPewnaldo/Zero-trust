@@ -5,8 +5,7 @@ export default function AnimationPage() {
   useEffect(() => {
     // 1. Script Injection (only if not present)
     const scriptId = 'unicorn-studio-script';
-    let embedScript = document.getElementById(scriptId) as HTMLScriptElement;
-
+    let embedScript = document.getElementById(scriptId);
     if (!embedScript) {
       embedScript = document.createElement('script');
       embedScript.id = scriptId;
@@ -61,22 +60,19 @@ export default function AnimationPage() {
     const hideBranding = () => {
       const projectContainer = document.querySelector('[data-us-project]');
       if (!projectContainer) return;
-
       const elements = projectContainer.querySelectorAll('a, .unicorn-brand, [class*="brand"], [class*="watermark"]');
       elements.forEach(el => {
-        const htmlEl = el as HTMLElement;
+        const htmlEl = el;
         // Double check text content to only target branding
         const text = (htmlEl.textContent || '').toLowerCase();
         const href = (htmlEl.getAttribute('href') || '').toLowerCase();
-
         if (text.includes('made with') || text.includes('unicorn') || href.includes('unicorn')) {
           htmlEl.style.display = 'none';
           htmlEl.remove();
         }
       });
     };
-
-    const observer = new MutationObserver((mutations) => {
+    const observer = new MutationObserver(mutations => {
       let shouldCheck = false;
       for (const mutation of mutations) {
         if (mutation.addedNodes.length > 0) {
@@ -90,21 +86,29 @@ export default function AnimationPage() {
     // Start observing
     const projectContainer = document.querySelector('[data-us-project]');
     if (projectContainer) {
-      observer.observe(projectContainer, { childList: true, subtree: true });
+      observer.observe(projectContainer, {
+        childList: true,
+        subtree: true
+      });
       hideBranding(); // Initial check
     } else {
       // If container not ready, wait for it
       const bodyObserver = new MutationObserver(() => {
         const container = document.querySelector('[data-us-project]');
         if (container) {
-          observer.observe(container, { childList: true, subtree: true });
+          observer.observe(container, {
+            childList: true,
+            subtree: true
+          });
           hideBranding();
           bodyObserver.disconnect();
         }
       });
-      bodyObserver.observe(document.body, { childList: true, subtree: true });
+      bodyObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
     }
-
     return () => {
       observer.disconnect();
       // We don't remove the script/style on unmount to prevent reloading issues if navigating back/forth

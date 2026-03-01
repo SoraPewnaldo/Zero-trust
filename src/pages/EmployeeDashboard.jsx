@@ -1,49 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { ScanResult, DashboardStats, DeviceInfo, SecurityRecommendation } from '@/lib/types';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Shield, Activity, AlertTriangle, CheckCircle, Monitor, Globe, Cpu, Clock, Lock, Key } from 'lucide-react';
-
+import { Shield, Activity, AlertTriangle, CheckCircle, Monitor, Globe, Cpu, Clock, Key } from 'lucide-react';
 export default function EmployeeDashboard() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [latestScan, setLatestScan] = useState<ScanResult | null>(null);
-  const [history, setHistory] = useState<ScanResult[]>([]);
+  const [latestScan, setLatestScan] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
-  const [resources, setResources] = useState<{ _id: string; name: string }[]>([]);
-  const [selectedResourceId, setSelectedResourceId] = useState<string>('');
-
+  const [stats, setStats] = useState(null);
+  const [deviceInfo, setDeviceInfo] = useState(null);
+  const [resources, setResources] = useState([]);
+  const [selectedResourceId, setSelectedResourceId] = useState('');
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoadingHistory(true);
     try {
-      const [historyResponse, statsResponse, devicesResponse, resourcesResponse] = await Promise.all([
-        api.user.getScanHistory(10),
-        api.user.getStats(),
-        api.user.getDevices(),
-        api.resources.getAll()
-      ]);
-
-      const historyData = historyResponse.scans.map((s: {
-        _id: string;
-        decision: string;
-        resourceId?: { name: string };
-        deviceId?: { deviceName: string };
-        trustScore: number;
-        createdAt: string;
-        timestamp: string;
-      }) => ({
+      const [historyResponse, statsResponse, devicesResponse, resourcesResponse] = await Promise.all([api.user.getScanHistory(10), api.user.getStats(), api.user.getDevices(), api.resources.getAll()]);
+      const historyData = historyResponse.scans.map(s => ({
         ...s,
         id: s._id,
         resource: s.resourceId?.name || 'Authentication',
         deviceId: s.deviceId?.deviceName || 'Web Session',
         timestamp: s.createdAt || s.timestamp
       }));
-
       setHistory(historyData);
       setStats({
         totalScans: statsResponse.totalScans,
@@ -53,7 +37,6 @@ export default function EmployeeDashboard() {
         mfaCount: statsResponse.mfaRequiredScans,
         blockedCount: statsResponse.blockedScans
       });
-
       if (devicesResponse.devices?.length > 0) {
         const d = devicesResponse.devices[0];
         setDeviceInfo({
@@ -64,12 +47,10 @@ export default function EmployeeDashboard() {
           lastSeen: d.lastSeenAt || new Date().toISOString()
         });
       }
-
       setResources(resourcesResponse.resources || []);
       if (resourcesResponse.resources?.length > 0 && !selectedResourceId) {
         setSelectedResourceId(resourcesResponse.resources[0]._id);
       }
-
       if (historyData.length > 0) {
         setLatestScan(historyData[0]);
       }
@@ -79,15 +60,12 @@ export default function EmployeeDashboard() {
       setLoadingHistory(false);
     }
   }, [user, selectedResourceId]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
-
   const handleScan = async () => {
     if (!user || !selectedResourceId) return;
     setScanning(true);
@@ -103,17 +81,14 @@ export default function EmployeeDashboard() {
       setScanning(false);
     }
   };
-
   const handleMfaVerify = () => {
     setMfaCode('');
     setMfaError('');
     setMfaModalOpen(true);
   };
-
-  const handleMfaSubmit = async (e: React.FormEvent) => {
+  const handleMfaSubmit = async e => {
     e.preventDefault();
     if (!latestScan || !mfaCode) return;
-
     setVerifying(true);
     setMfaError('');
     try {
@@ -127,28 +102,23 @@ export default function EmployeeDashboard() {
       setVerifying(false);
     }
   };
-
-  const decisionStyle = (d: string) => {
+  const decisionStyle = d => {
     const lowerD = d?.toLowerCase();
     if (lowerD === 'allow') return 'text-green-400 border-green-500/30 bg-green-500/10';
     if (lowerD === 'mfa_required' || lowerD === 'mfa required') return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
     if (lowerD === 'blocked') return 'text-red-400 border-red-500/30 bg-red-500/10';
     return 'text-white/40 border-white/20 bg-white/5';
   };
-
-  const factorStatusStyle = (s: string) => {
+  const factorStatusStyle = s => {
     const lowerS = s?.toLowerCase();
     if (lowerS === 'pass') return 'text-green-400/80 border-green-500/20 bg-green-500/5';
     if (lowerS === 'warn') return 'text-yellow-400/80 border-yellow-500/20 bg-yellow-500/5';
     if (lowerS === 'fail') return 'text-red-400/80 border-red-500/20 bg-red-500/5';
     return 'text-white/50 bg-white/5';
   };
-
-  return (
-    <DashboardLayout title="EMPLOYEE DASHBOARD" subtitle="DEVICE TRUST VERIFICATION">
+  return <DashboardLayout title="EMPLOYEE DASHBOARD" subtitle="DEVICE TRUST VERIFICATION">
       {/* Quick Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      {stats && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <div className="border border-white/20 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Activity size={14} className="text-white/50" />
@@ -177,8 +147,7 @@ export default function EmployeeDashboard() {
             </div>
             <div className="text-2xl font-mono text-white font-bold">{stats.blockedCount}</div>
           </div>
-        </div>
-      )}
+        </div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Access Request Panel */}
@@ -195,39 +164,22 @@ export default function EmployeeDashboard() {
             <div className="space-y-4">
               <label className="text-[10px] font-mono text-white/40 block">SELECT RESOURCE TO SCAN</label>
               <div className="space-y-2">
-                {resources.map((res) => (
-                  <button
-                    key={res._id}
-                    onClick={() => setSelectedResourceId(res._id)}
-                    className={`w-full text-left px-4 py-3 border transition-all duration-300 flex items-center justify-between group/btn ${selectedResourceId === res._id
-                      ? 'border-white/40 bg-white/5'
-                      : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
-                      }`}
-                  >
+                {resources.map(res => <button key={res._id} onClick={() => setSelectedResourceId(res._id)} className={`w-full text-left px-4 py-3 border transition-all duration-300 flex items-center justify-between group/btn ${selectedResourceId === res._id ? 'border-white/40 bg-white/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}`}>
                     <span className="text-xs font-mono text-white/80">{res.name.toUpperCase()}</span>
                     {selectedResourceId === res._id && <div className="w-1.5 h-1.5 bg-white shadow-[0_0_5px_white]"></div>}
-                  </button>
-                ))}
+                  </button>)}
               </div>
             </div>
 
             <div className="flex flex-col justify-end">
-              <button
-                onClick={handleScan}
-                disabled={scanning}
-                className="w-full py-4 bg-white text-black font-mono text-xs font-bold tracking-wider hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {scanning ? (
-                  <>
+              <button onClick={handleScan} disabled={scanning} className="w-full py-4 bg-white text-black font-mono text-xs font-bold tracking-wider hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {scanning ? <>
                     <Activity size={14} className="animate-spin" />
                     RUNNING TRUST SCAN...
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <Shield size={14} />
                     INITIATE VERIFICATION
-                  </>
-                )}
+                  </>}
               </button>
               <p className="text-[9px] font-mono text-white/30 mt-3 text-center">
                 SCAN DETECTS DEVICE IDENTITY, SECURITY PATCHES, AND NETWORK CONTEXT AUTOMATICALLY.
@@ -244,8 +196,7 @@ export default function EmployeeDashboard() {
             <div className="flex-1 h-px bg-white/10"></div>
           </div>
 
-          {deviceInfo ? (
-            <div className="space-y-3">
+          {deviceInfo ? <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Cpu size={14} className="text-white/40" />
                 <div>
@@ -281,16 +232,12 @@ export default function EmployeeDashboard() {
                   <div className="text-xs font-mono text-white/80">{new Date(deviceInfo.lastSeen).toLocaleString()}</div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-xs font-mono text-white/40 animate-pulse">DETECTING DEVICE...</div>
-          )}
+            </div> : <div className="text-xs font-mono text-white/40 animate-pulse">DETECTING DEVICE...</div>}
         </div>
       </div>
 
       {/* Latest Scan Result */}
-      {latestScan && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {latestScan && <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 border border-white/20 p-4 lg:p-6">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-6 h-px bg-white/40"></div>
@@ -313,32 +260,22 @@ export default function EmployeeDashboard() {
                   {latestScan.mfaVerified && ' ✓'}
                 </span>
               </div>
-              {latestScan.decision === 'mfa_required' && !latestScan.mfaVerified && (
-                <button
-                  onClick={handleMfaVerify}
-                  disabled={verifying}
-                  className="px-4 py-2 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-mono text-[10px] hover:bg-yellow-500/20 transition-all"
-                >
+              {latestScan.decision === 'mfa_required' && !latestScan.mfaVerified && <button onClick={handleMfaVerify} disabled={verifying} className="px-4 py-2 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-mono text-[10px] hover:bg-yellow-500/20 transition-all">
                   <Key size={12} className="inline mr-2" />
                   {verifying ? 'VERIFYING...' : 'STEP-UP WITH MFA'}
-                </button>
-              )}
+                </button>}
             </div>
 
-            {latestScan.factors && latestScan.factors.length > 0 && (
-              <div className="space-y-1.5">
+            {latestScan.factors && latestScan.factors.length > 0 && <div className="space-y-1.5">
                 <div className="text-[9px] font-mono text-white/30 tracking-widest mb-2">DECISION FACTORS</div>
-                {latestScan.factors.map((factor, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 border border-white/5 bg-white/[0.02]">
+                {latestScan.factors.map((factor, idx) => <div key={idx} className="flex items-center gap-3 p-2 border border-white/5 bg-white/[0.02]">
                     <div className={`w-1.5 h-1.5 shrink-0 ${factor.status === 'pass' ? 'bg-green-500' : factor.status === 'warn' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
                     <span className="text-[10px] font-mono text-white/70 flex-1">{factor.name}</span>
                     <span className={`px-1.5 py-0.5 text-[9px] font-mono border ${factorStatusStyle(factor.status)}`}>
                       {factor.status.toUpperCase()}
                     </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  </div>)}
+              </div>}
           </div>
 
           <div className="border border-white/20 p-4 lg:p-6 flex flex-col">
@@ -348,23 +285,18 @@ export default function EmployeeDashboard() {
               <div className="flex-1 h-px bg-white/10"></div>
             </div>
             <div className="space-y-2 flex-1">
-              {latestScan.trustScore >= 80 ? (
-                <div className="p-3 border border-green-500/10 bg-green-500/5">
+              {latestScan.trustScore >= 80 ? <div className="p-3 border border-green-500/10 bg-green-500/5">
                   <CheckCircle size={14} className="text-green-500 mb-2" />
                   <div className="text-[10px] font-mono text-green-400/80">OPTIMAL SECURITY PARITY</div>
                   <div className="text-[9px] font-mono text-white/40 mt-1">No critical vulnerabilities detected on this device.</div>
-                </div>
-              ) : (
-                <div className="p-3 border border-red-500/10 bg-red-500/5">
+                </div> : <div className="p-3 border border-red-500/10 bg-red-500/5">
                   <AlertTriangle size={14} className="text-red-500 mb-2" />
                   <div className="text-[10px] font-mono text-red-400/80">IMPROVE TRUST SCORE</div>
                   <div className="text-[9px] font-mono text-white/40 mt-1">Check firewall status and pending security patches.</div>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* History Table */}
       <div className="border border-white/20 p-4 lg:p-6">
@@ -375,12 +307,7 @@ export default function EmployeeDashboard() {
           <span className="text-[10px] font-mono text-white/30">{history.length} RECORDS</span>
         </div>
 
-        {loadingHistory ? (
-          <div className="text-xs font-mono text-white/40 animate-pulse">SYNCING LOGS...</div>
-        ) : history.length === 0 ? (
-          <div className="text-xs font-mono text-white/30">NO SECURITY EVENTS RECORDED</div>
-        ) : (
-          <>
+        {loadingHistory ? <div className="text-xs font-mono text-white/40 animate-pulse">SYNCING LOGS...</div> : history.length === 0 ? <div className="text-xs font-mono text-white/30">NO SECURITY EVENTS RECORDED</div> : <>
             {/* Desktop Table */}
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-left">
@@ -393,8 +320,7 @@ export default function EmployeeDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((entry) => (
-                    <tr key={entry.id} className="border-b border-white/5">
+                  {history.map(entry => <tr key={entry.id} className="border-b border-white/5">
                       <td className="text-xs font-mono text-white/60 py-2 pr-4 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString()}</td>
                       <td className="text-xs font-mono text-white/60 py-2 pr-4">{entry.resource}</td>
                       <td className="text-xs font-mono text-white/80 py-2 pr-4">{entry.trustScore}</td>
@@ -403,16 +329,14 @@ export default function EmployeeDashboard() {
                           {entry.decision?.toUpperCase()}
                         </span>
                       </td>
-                    </tr>
-                  ))}
+                    </tr>)}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile Card Layout */}
             <div className="md:hidden space-y-3">
-              {history.map((entry) => (
-                <div key={entry.id} className="border border-white/10 p-3 space-y-1.5">
+              {history.map(entry => <div key={entry.id} className="border border-white/10 p-3 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono text-white/60">{entry.resource}</span>
                     <span className={`px-2 py-0.5 text-[9px] font-mono border ${decisionStyle(entry.decision)}`}>
@@ -423,16 +347,13 @@ export default function EmployeeDashboard() {
                     <span>SCORE: <span className="text-white/80">{entry.trustScore}</span></span>
                     <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
-          </>
-        )}
+          </>}
       </div>
 
       {/* MFA Modal */}
-      {mfaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      {mfaModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-black border border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.1)] relative">
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/50"></div>
             <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/50"></div>
@@ -453,47 +374,28 @@ export default function EmployeeDashboard() {
               <form onSubmit={handleMfaSubmit} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-mono text-white/40 block">AUTHENTICATOR CODE</label>
-                  <input
-                    type="text"
-                    value={mfaCode}
-                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10"
-                    autoFocus
-                  />
+                  <input type="text" value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10" autoFocus />
                   <p className="text-[9px] font-mono text-white/30 text-center pt-2">
                     USE TEST CODE: <span className="text-white/60">123456</span>
                   </p>
                 </div>
 
-                {mfaError && (
-                  <div className="flex items-center gap-2 text-red-400 bg-red-500/10 p-2 border border-red-500/20 justify-center">
+                {mfaError && <div className="flex items-center gap-2 text-red-400 bg-red-500/10 p-2 border border-red-500/20 justify-center">
                     <AlertTriangle size={12} />
                     <span className="text-[10px] font-mono">{mfaError}</span>
-                  </div>
-                )}
+                  </div>}
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setMfaModalOpen(false)}
-                    className="py-3 border border-white/10 text-[10px] font-mono text-white/60 hover:bg-white/5 transition-colors"
-                  >
+                  <button type="button" onClick={() => setMfaModalOpen(false)} className="py-3 border border-white/10 text-[10px] font-mono text-white/60 hover:bg-white/5 transition-colors">
                     CANCEL
                   </button>
-                  <button
-                    type="submit"
-                    disabled={verifying || mfaCode.length !== 6}
-                    className="py-3 bg-white text-black text-[10px] font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  <button type="submit" disabled={verifying || mfaCode.length !== 6} className="py-3 bg-white text-black text-[10px] font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {verifying ? 'VERIFYING...' : 'CONFIRM ACCESS'}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
-      )}
-    </DashboardLayout>
-  );
+        </div>}
+    </DashboardLayout>;
 }
