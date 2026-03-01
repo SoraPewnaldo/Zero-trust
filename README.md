@@ -1,196 +1,132 @@
-# Zero-trust (SoraIAM) - Zero Trust IAM Platform
+# Capstone Project: ZeroIAM (Zero Trust Architecture Platform)
 
 ![ZeroIAM](https://img.shields.io/badge/ZeroIAM-Zero%20Trust%20IAM-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-1.1.0-orange)
 ![Stack](https://img.shields.io/badge/stack-MERN-blueviolet)
+![Architecture](https://img.shields.io/badge/architecture-Microservices-orange)
+![CI/CD](https://img.shields.io/badge/deployment-Jenkins%20%7C%20AWS-green)
 
-**ZeroIAM** is an enterprise-grade Zero Trust Identity and Access Management platform. It implements a "Never Trust, Always Verify" philosophy by combining real-time device posture scanning (Python Trust Engine) with context-aware access control (Node.js Backend).
+**ZeroIAM** is an enterprise-grade Identity and Access Management (IAM) platform developed as a comprehensive Capstone Project. It serves as a practical implementation and demonstration of **Zero Trust Architecture (ZTA)** principles in modern web applications.
 
-> **Note**: This project has been fully converted to a strict **JavaScript (MERN)** stack. All original TypeScript code has been stripped and is backed up on the `backup/typescript-original` branch.
+Rather than relying on traditional perimeter-based security (a VPN or firewall), ZeroIAM enforces a "Never Trust, Always Verify" model. Access to resources is granted dynamically based on real-time continuous evaluation of both the user's identity and their device's security posture.
 
 ---
 
-## 🏗️ System Architecture
+## 🏛️ Project Motivation & Zero Trust Principles
 
-ZeroIAM is composed of four primary services working in tandem, fully integrated with Jenkins CI/CD for automated AWS deployments.
+Traditional network security models operated on the assumption that anyone inside the corporate network was trusted. In the era of remote work, BYOD (Bring Your Own Device), and cloud migrations, this perimeter has dissolved.
+
+ZeroIAM was built to demonstrate the core tenets of NIST SP 800-207 (Zero Trust Architecture):
+
+1. **Continuous Verification**: Identity and device health are verified upon every single access request, regardless of where the request originates.
+2. **Context-Aware Access**: Decisions are based on a dynamically calculated "Trust Score" rather than static roles.
+3. **Least Privilege Enforcement**: Users are only granted access to the specific resources they explicitly require at that exact moment.
+
+---
+
+## 🏗️ System Architecture & Workflow
+
+The platform operates as a distributed system, segregating responsibilities into a classic Policy Enforcement Point (PEP) and Policy Decision Point (PDP) model.
 
 ```mermaid
 graph TD
-    User((User)) -->|HTTPS| Proxy[Nginx Reverse Proxy :80]
-    Proxy -->|Serve| Frontend[React Frontend :80/443]
-    Frontend -->|API Requests| Backend[Express Backend :3001]
-    Backend -->|Validate Decision| PDP[Python Trust Engine :5000]
-    Backend -->|Store Policy/Logs| DB[(MongoDB :27017)]
+    User((User & Device)) -->|Requests Access| PEP[Express Backend / PEP]
+    PEP -->|Queries Context| DB[(MongoDB)]
+    PEP -->|Requests Evaluation| PDP[Python Trust Engine / PDP]
 
-    subgraph "Trust Engine (PDP)"
-        PDP -->|Local Scan| OS[Device Posture]
+    subgraph "Context Engine"
+        PDP -->|Scans OS Health| OS[Firewall, Updates, Ports]
+        PDP -->|Calculates Math| Score[Trust Score Output]
     end
+
+    Score -->|Returns Score| PEP
+    PEP -->|Decision| Result{Allow, Deny, or MFA?}
+
+    Result -->|Allow| Resource[Target Resource]
+    Result -->|Deny| Block[Access Denied Route]
+    Result -->|MFA| OTP[Prompt for 2FA]
 ```
 
+### 1. The Frontend (React/Vite)
+
+Built with React and Tailwind CSS, the frontend serves as the user-facing portal. It features two distinct views:
+
+- **Employee Portal**: Where users initiate Trust Scans to request access to corporate web resources.
+- **Admin Dashboard**: A centralized console providing a global security map, live audit logs, and controls to manage Trust Policies (thresholds) and employee access.
+
+### 2. The Backend / Policy Enforcement Point (Node.js & Express)
+
+The backend acts as the gatekeeper. Built on the MERN stack (MongoDB, Express, React, Node.js), it handles:
+
+- **Authentication**: Issuing and verifying JSON Web Tokens (JWT) for session management.
+- **Routing**: Intercepting resource requests and acting as the PEP. It halts requests and calls the Trust Engine before proceeding.
+- **Policy Enforcement**: Comparing the calculated Trust Score against the resource's required sensitivity threshold to enforce Allow, Deny, or MFA (Multi-Factor Authentication) actions.
+
+### 3. The Trust Engine / Policy Decision Point (Python)
+
+A lightweight microservice built with Flask. When the backend requests an evaluation, the Python Trust Engine:
+
+- Simulates/Scans the host's operating system posture (checking if firewalls are active, OS updates are pending, or insecure ports are open).
+- Ingests this telemetry and calculates a cumulative **Trust Score** (0-100).
+- Returns this context payload back to the Node.js backend for final enforcement.
+
+### 4. Database (MongoDB)
+
+A non-relational database used to store:
+
+- `Users`: Credentials, roles (Admin/Employee), and MFA secrets.
+- `Resources`: The corporate assets being protected, along with their sensitivity levels (Low, Medium, Critical).
+- `AuditLogs`: Immutable records of every access attempt, the calculated trust score, and the final decision (Allow/Block) for compliance tracking.
+
 ---
 
-## 📋 Table of Contents
+## 🚀 CI/CD Pipeline & AWS Deployment
 
-- [Prerequisites](#-prerequisites)
-- [Step 1: Installation](#step-1-installation)
-- [Step 2: Configuration](#step-2-configuration)
-- [Step 3: Running the Application](#step-3-running-the-application)
-- [Step 4: Initializing Data](#step-4-initializing-data)
-- [Step 5: Usage Walkthrough](#step-5-usage-walkthrough)
-- [CI/CD & Deployment](#-cicd--deployment)
-- [Project Structure](#-project-structure)
+To simulate a real-world enterprise deployment lifecycle, ZeroIAM utilizes an automated Jenkins CI/CD pipeline integrated with AWS EC2.
 
----
-
-## 📦 Prerequisites
-
-Ensure you have the following installed on your host machine:
-
-- **Node.js** (v18+) & **npm** (v9+)
-- **Python** (3.9+) & **pip**
-- **MongoDB** (v6+) - Running locally or via Atlas
-- **Docker & Docker Compose** (Optional, for containerized run)
+1. **Source Control Integration**: Pushes to the `main` branch trigger a GitHub Webhook sent to Jenkins.
+2. **Automated Validation**:
+   - Jenkins clones the codebase and runs `npm run lint` on the React frontend.
+   - Jenkins executes an isolated `vitest` suite against the Node.js backend models to guarantee business logic integrity before deployment.
+3. **Containerization**: If tests pass, Docker and `docker-compose` build isolated images for the Frontend (served via Nginx), the Backend, the Trust Engine, and a MongoDB container.
+4. **Live Deployment**: Jenkins securely SSHs into the active AWS EC2 instance (`15.207.15.101`), pulls down older containers, purges stale images, and spins up the newly built network.
 
 ---
 
-## STEP 1: Installation
+## 🔐 Security Deep Dive: The Trust Score Algorithm
 
-### 1. Clone the Repository
+Access is not binary; it is fluid. The Trust Engine evaluates multiple vectors:
+
+- **Base Score**: Everyone starts at a baseline.
+- **Positive Context**: Using a registered corporate device, having an active firewall, or connecting from an allowed geolocation adds points.
+- **Negative Context**: Outdated OS patches or risky open ports dock points.
+
+**Enforcement Logic:**
+
+- **Score > 80**: Transparent access granted (Allow).
+- **Score 50-79**: Suspicious context. Access heavily restricted; user is forced to solve a dynamic Multi-Factor Authentication (OTP) challenge to proceed.
+- **Score < 50**: High risk. Access immediately Denied; security teams are alerted via the Audit Log.
+
+---
+
+## 📖 Installation & Local Development
+
+For reviewers wishing to test the application locally:
 
 ```bash
+# 1. Clone & Install
 git clone https://github.com/SoraPewnaldo/Zero-trust.git
 cd Zero-trust
-```
+npm install && cd server && npm install
 
-### 2. Install Frontend Dependencies
-
-```bash
-npm install
-```
-
-### 3. Install Backend Dependencies
-
-```bash
-cd server
-npm install
-cd ..
-```
-
-### 4. Install Trust Engine Dependencies
-
-```bash
-cd trust_engine
-pip install -r requirements.txt
-cd ..
-```
-
----
-
-## STEP 2: Configuration
-
-### Backend Env (`server/.env`)
-
-Create a `.env` file in the `server` directory:
-
-```bash
-cd server
-cp .env.example .env
-```
-
-Ensure `MONGODB_URI` points to your running database and `TRUST_ENGINE_URL` is set to `http://localhost:5000/scan`.
-
----
-
-## STEP 3: Running the Application
-
-### Option A: The "One-Command" Dev Mode
-
-From the **root** directory:
-
-```bash
+# 2. Boot Data & Dev Servers
+npm run init-db
 npm run dev:all
 ```
 
-_This starts the Frontend, Backend, and Trust Engine concurrently._
-
-### Option B: Individual Services (For Debugging)
-
-- **Frontend**: `npx vite` (Default Port 5173)
-- **Backend**: `cd server && npm run dev` (Port 3001)
-- **Trust Engine**: `cd trust_engine && python main.py` (Port 5000)
+- **Live Portal**: `http://localhost:5173`
+- **Admin**: `sora` / `password123`
+- **Employee**: `joe` / `password123`
 
 ---
 
-## STEP 4: Initializing Data
-
-Before logging in, you must seed the database with the core Admin and Employee accounts:
-
-```bash
-cd server
-npm run init-db
-```
-
-**Success Check**: You should see "Database initialized successfully" in the console.
-
----
-
-## STEP 5: Usage Walkthrough
-
-### 1. Admin Portal
-
-- **Login**: `sora` / `password123`
-- **What to do**:
-  - View the **Global Security Map** and real-time **Audit Logs**.
-  - Go to **Access Policies** to define trust thresholds (e.g., "Production Console" needs 80+ score).
-  - Manage **Employees** and their specific security context.
-
-### 2. Employee Verification Scan
-
-- **Login**: `joe` / `password123`
-- **What to do**:
-  - Click **"Initiate Trust Scan"**.
-  - The Backend calls the **Python Trust Engine** on your machine.
-  - The Engine checks: **Firewall status, OS updates, and open ports**.
-  - result: Your **Trust Score** is calculated and your session is either **Allowed**, **Blocked**, or flagged for **MFA**.
-
----
-
-## 🚀 CI/CD & Deployment
-
-This project uses a fully automated **Jenkins Pipeline** to build, test, and deploy to AWS EC2 (`15.207.15.101`).
-
-1. **Commit to `main`**: Jenkins detects the push via webhook.
-2. **Validation Stage**:
-   - Runs `npm run lint` and Vite builds on the frontend.
-   - Runs `npm run lint` and `vitest run` (isolated Node test environment) on the backend.
-3. **Deployment Stage**:
-   - Safely wipes old containers and dangling Docker images to preserve EC2 disk space.
-   - Pulls the latest `main` branch directly on the EC2 instance.
-   - Deploys the full stack using `docker-compose -f docker-compose.prod.yml up -d --build`.
-
-_(Note: Live EC2 DB must be populated manually inside the container via `docker exec zeroiam-backend npm run init-db` for the first run)._
-
----
-
-## 📁 Project Structure
-
-- `src/`: React Frontend (Vite/JavaScript).
-- `server/`: Express.js Backend (Trust score logic & DB management; isolated Vitest suite).
-- `trust_engine/`: Python PDP (Osquery/Nmap scanning logic).
-- `docker-compose.yml`: Multi-container orchestration logic.
-- `Jenkinsfile`: Automated AWS deployment pipeline logic.
-- `nginx.conf`: Production-ready reverse proxy.
-
----
-
-## 🔐 Security Features
-
-- **Device Fingerprinting**: Scans the actual host for vulnerabilities before granting access.
-- **Fail-Closed**: If the Trust Engine is offline, access is blocked by default.
-- **JWT Protection**: All API routes (except Login) require valid bearer tokens.
-
----
-
-**Maintainers**: SoraPewnaldo, Aakhya Chhauhan, Ritik Arora, Jivaj Arora
-**Support**: Open an issue at [GitHub Issues](https://github.com/SoraPewnaldo/Zero-trust/issues)
+**Capstone Team (Maintainers):** SoraPewnaldo, Aakhya Chhauhan, Ritik Arora, Jivaj Arora
