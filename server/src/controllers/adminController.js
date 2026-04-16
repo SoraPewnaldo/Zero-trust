@@ -628,6 +628,70 @@ export const createUser = async (req, res) => {
 };
 
 /**
+ * Update an existing user
+ */
+export const updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { department, role, status, clearanceLevel } = req.body;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update fields
+    if (department) user.department = department;
+    if (role) user.role = role;
+    if (status) user.isActive = status === 'active';
+    if (clearanceLevel) user.clearanceLevel = clearanceLevel;
+    
+    await user.save();
+
+    // Audit log
+    await AuditLog.create({
+      eventId: uuidv4(),
+      eventType: 'user_updated',
+      eventCategory: 'administration',
+      severity: 'info',
+      actor: {
+        userId: req.user.id,
+        username: req.user.username,
+        role: req.user.role,
+        ipAddress: req.ip
+      },
+      target: {
+        type: 'user',
+        id: user._id,
+        name: user.username
+      },
+      action: 'update_user',
+      result: 'success',
+      context: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      },
+      timestamp: new Date()
+    });
+
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        department: user.department,
+        role: user.role,
+        isActive: user.isActive,
+        clearanceLevel: user.clearanceLevel
+      }
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+};
+
+/**
  * Delete a user
  */
 export const deleteUser = async (req, res) => {

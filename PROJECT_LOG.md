@@ -187,13 +187,13 @@ docker-compose down -v
 
 ### 🔴 High Priority (App Core Completion)
 - [ ] **Real MFA Implementation**: Replace simulation with proper TOTP (e.g. `otplib` or `speakeasy`).
-- [ ] **Rate Limiting**: Add `express-rate-limit` to `/api/auth/login` to prevent brute force.
-- [ ] **OSQuery Fix**: Ensure `osqueryi` is correctly running inside the `trust-engine` container or document the specific interrogation logic.
+- [x] **Rate Limiting**: Added `express-rate-limit` to `/api/auth/login` and other APIs.
+- [x] **OSQuery Fix**: Created `windows_agent.py` to seamlessly pass real Windows security telemetry into the Docker container.
 
 ### 🟡 Medium Priority (Security & Polish)
-- [ ] **Helmet.js**: Add security headers middleware for the Express backend.
-- [ ] **Input Sanitation**: Escape regex filters in `getScanLogs` to prevent ReDoS.
-- [ ] **Trust Engine Timestamp**: Update `main.py` to return a real ISO string instead of `"now"`.
+- [x] **Helmet.js**: Added security headers middleware for the Express backend.
+- [x] **Input Sanitation**: Escaped regex filters in `getScanLogs` to prevent ReDoS.
+- [x] **Trust Engine Timestamp**: Updated `main.py` to return a real ISO string timestamp.
 - [ ] **Resource pages**: Complete the placeholder stubs for `/resource/internal-dashboard`, etc.
 - [ ] **Admin: Edit user**: Implement PUT route for updating user roles and departments.
 

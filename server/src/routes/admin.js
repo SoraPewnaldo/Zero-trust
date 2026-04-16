@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboardStats, getScanLogs, getUsers, getUserDetail, createUser, deleteUser } from '../controllers/adminController.js';
+import { getDashboardStats, getScanLogs, getUsers, getUserDetail, createUser, deleteUser, updateUser } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 const router = express.Router();
 
@@ -10,5 +10,6 @@ router.get('/scans', getScanLogs);
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.get('/users/:userId', getUserDetail);
+router.put('/users/:userId', updateUser);
 router.delete('/users/:userId', deleteUser);
 export default router;
