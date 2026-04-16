@@ -34,3 +34,14 @@ server/.env
 trust_engine/*.log
 trust_engine/*_out.txt
 server_logs.txt
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+trust_engine/venv/
+
+# System
+.DS_Store
+Thumbs.db
