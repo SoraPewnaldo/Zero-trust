@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        SAFE_BRANCH = "${env.BRANCH_NAME.replaceAll('/', '-')}"
+        // Fallback for BRANCH_NAME if not in a multibranch pipeline
+        CURRENT_BRANCH = "${env.BRANCH_NAME ?: 'main'}"
+        SAFE_BRANCH = "${CURRENT_BRANCH.replaceAll('/', '-')}"
         DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${SAFE_BRANCH}-${env.BUILD_ID}"
         DOCKER_BACKEND_IMAGE = "zeroiam-backend:${SAFE_BRANCH}-${env.BUILD_ID}"
     }
@@ -73,13 +75,19 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            script {
+                try {
+                    cleanWs()
+                } catch (e) {
+                    echo "Clean workspace skipped: ${e.message}"
+                }
+            }
         }
         success {
-            echo "Pipeline succeeded for branch ${env.BRANCH_NAME}!"
+            echo "Pipeline succeeded for branch ${env.SAFE_BRANCH}!"
         }
         failure {
-            echo "Pipeline failed for branch ${env.BRANCH_NAME}. Please check logs."
+            echo "Pipeline failed for branch ${env.SAFE_BRANCH}. Please check logs."
             
             script {
                 try {
