@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import EmployeeForm from '@/components/admin/EmployeeForm';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock, Plus, Trash2 } from 'lucide-react';
+import { Shield, Users, AlertTriangle, Activity, CheckCircle, XCircle, ArrowLeft, Monitor, Globe, Cpu, Clock, Plus, Trash2, UserCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 export default function AdminDashboard() {
   const [logs, setLogs] = useState([]);
@@ -114,19 +114,13 @@ export default function AdminDashboard() {
         username: u.username,
         role: u.role,
         lastScan: u.lastLoginAt,
-        // Approx
-        lastScore: 0,
-        // Would need scan aggregation
-        lastDecision: null,
-        totalScans: 0,
-        // Would need scan aggregation
-        avgScore: 0,
+        lastScore: u.lastScore ?? null,
+        lastDecision: u.lastDecision ?? null,
+        totalScans: u.totalScans ?? 0,
+        avgScore: u.avgTrustScore ?? 0,
         status: u.status
       }));
 
-      // Using live user data registry provided by the system API. 
-      // Note: User-specific metrics are derived from real-time verification logs.
-      // To keep it simple and working:
       setUsers(realUsers);
 
       // Generate threats from real logs (e.g. blocked or low score)
@@ -216,6 +210,16 @@ export default function AdminDashboard() {
       show: true,
       userId
     });
+  };
+  const handleToggleSuspend = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+    try {
+      await api.admin.updateUser(userId, { status: newStatus });
+      setUsers(prev => prev.map(u => u.userId === userId ? { ...u, status: newStatus } : u));
+    } catch (error) {
+      console.error('Failed to update user status:', error);
+      alert('Failed to update user status');
+    }
   };
   const confirmDeleteUser = async () => {
     if (!confirmDelete.userId) return;
@@ -619,12 +623,11 @@ export default function AdminDashboard() {
                     </td>
                     <td className="text-xs font-mono text-white/40 py-2 pr-4 whitespace-nowrap">{u.lastScan ? new Date(u.lastScan).toLocaleString() : '—'}</td>
                     <td className="py-2">
-                      <button onClick={() => handleViewUser(u.userId)} className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors hover:border-white/40">
-                        VIEW
-                      </button>
-                      <button onClick={() => handleDeleteUser(u.userId)} className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-2 py-0.5 transition-colors hover:border-red-500/40 ml-2 flex items-center gap-1">
-                        <Trash2 size={10} /> FIRE
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => handleViewUser(u.userId)} className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-2 py-0.5 transition-colors hover:border-white/40">VIEW</button>
+                        <button onClick={() => handleToggleSuspend(u.userId, u.status)} className={`text-[10px] font-mono border px-2 py-0.5 transition-colors flex items-center gap-1 ${u.status === 'suspended' ? 'text-green-400 border-green-500/30 hover:border-green-500/60' : 'text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60'}`}><UserCheck size={10} />{u.status === 'suspended' ? 'ACTIVATE' : 'SUSPEND'}</button>
+                        <button onClick={() => handleDeleteUser(u.userId)} className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-2 py-0.5 transition-colors hover:border-red-500/40 flex items-center gap-1"><Trash2 size={10} /> FIRE</button>
+                      </div>
                     </td>
                   </tr>)}
               </tbody>
@@ -648,12 +651,9 @@ export default function AdminDashboard() {
                   <span>AVG: {u.avgScore}</span>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  <button onClick={() => handleViewUser(u.userId)} className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-3 py-1 transition-colors hover:border-white/40 flex-1 text-center min-h-[36px] flex items-center justify-center">
-                    VIEW
-                  </button>
-                  <button onClick={() => handleDeleteUser(u.userId)} className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-3 py-1 transition-colors hover:border-red-500/40 flex items-center justify-center gap-1 min-h-[36px]">
-                    <Trash2 size={10} /> FIRE
-                  </button>
+                  <button onClick={() => handleViewUser(u.userId)} className="text-[10px] font-mono text-white/50 hover:text-white/80 border border-white/15 px-3 py-1 transition-colors hover:border-white/40 flex-1 text-center min-h-[36px] flex items-center justify-center">VIEW</button>
+                  <button onClick={() => handleToggleSuspend(u.userId, u.status)} className={`text-[10px] font-mono border px-3 py-1 transition-colors flex items-center justify-center gap-1 min-h-[36px] ${u.status === 'suspended' ? 'text-green-400 border-green-500/30' : 'text-yellow-400 border-yellow-500/30'}`}><UserCheck size={10} />{u.status === 'suspended' ? 'ACTIVATE' : 'SUSPEND'}</button>
+                  <button onClick={() => handleDeleteUser(u.userId)} className="text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-500/20 px-3 py-1 transition-colors hover:border-red-500/40 flex items-center justify-center gap-1 min-h-[36px]"><Trash2 size={10} /> FIRE</button>
                 </div>
               </div>)}
           </div>

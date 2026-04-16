@@ -133,6 +133,10 @@ export const api = {
     deleteUser: async userId => {
       const response = await apiClient.delete(`/admin/users/${userId}`);
       return response.data;
+    },
+    updateUser: async (userId, data) => {
+      const response = await apiClient.put(`/admin/users/${userId}`, data);
+      return response.data;
     }
   }
 };

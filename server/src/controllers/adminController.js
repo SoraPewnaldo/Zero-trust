@@ -372,21 +372,103 @@ export const getScanLogs = async (req, res) => {
 };
 
 /**
- * Get all users
+ * Get all users with aggregated scan statistics.
+ * Uses a single $lookup + $group pipeline to avoid N+1 queries.
  */
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-passwordHash -mfaSecret -mfaBackupCodes').sort({
-      createdAt: -1
-    });
-    res.json({
-      users
-    });
+    const users = await User.aggregate([
+      // Strip sensitive fields
+      {
+        $project: {
+          passwordHash: 0,
+          mfaSecret: 0,
+          mfaBackupCodes: 0,
+        },
+      },
+      // Join scan results for each user
+      {
+        $lookup: {
+          from: 'scanresults',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'scans',
+        },
+      },
+      // Compute per-user stats from the joined scans array
+      {
+        $addFields: {
+          totalScans: { $size: '$scans' },
+          avgTrustScore: {
+            $cond: [
+              { $gt: [{ $size: '$scans' }, 0] },
+              { $round: [{ $avg: '$scans.trustScore' }, 0] },
+              0,
+            ],
+          },
+          allowedScans: {
+            $size: {
+              $filter: {
+                input: '$scans',
+                as: 's',
+                cond: { $eq: ['$$s.decision', 'allow'] },
+              },
+            },
+          },
+          mfaRequiredScans: {
+            $size: {
+              $filter: {
+                input: '$scans',
+                as: 's',
+                cond: { $eq: ['$$s.decision', 'mfa_required'] },
+              },
+            },
+          },
+          blockedScans: {
+            $size: {
+              $filter: {
+                input: '$scans',
+                as: 's',
+                cond: { $eq: ['$$s.decision', 'blocked'] },
+              },
+            },
+          },
+          // Last scan = element with the highest createdAt
+          lastScan: {
+            $cond: [
+              { $gt: [{ $size: '$scans' }, 0] },
+              {
+                $arrayElemAt: [
+                  {
+                    $sortArray: {
+                      input: '$scans',
+                      sortBy: { createdAt: -1 },
+                    },
+                  },
+                  0,
+                ],
+              },
+              null,
+            ],
+          },
+        },
+      },
+      // Expose lastScore + lastDecision from the last scan
+      {
+        $addFields: {
+          lastScore: { $ifNull: ['$lastScan.trustScore', null] },
+          lastDecision: { $ifNull: ['$lastScan.decision', null] },
+        },
+      },
+      // Drop the raw scans array — no need to send it to the client
+      { $project: { scans: 0, lastScan: 0 } },
+      { $sort: { createdAt: -1 } },
+    ]);
+
+    res.json({ users });
   } catch (error) {
     console.error('Get users error:', error);
-    res.status(500).json({
-      error: 'Failed to get users'
-    });
+    res.status(500).json({ error: 'Failed to get users' });
   }
 };
 

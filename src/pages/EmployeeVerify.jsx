@@ -226,9 +226,6 @@ export default function EmployeeVerify() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-mono text-white/40 block">AUTHENTICATOR CODE</label>
                   <input type="text" value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" className="w-full bg-black border border-white/20 p-3 text-center font-mono text-xl tracking-[0.5em] text-white focus:border-white/50 focus:outline-none placeholder:text-white/10" autoFocus />
-                  <p className="text-xs font-mono text-yellow-500 font-bold text-center pt-2 animate-pulse">
-                    USE TEST CODE: 123456
-                  </p>
                 </div>
 
                 {mfaError && <div className="flex items-center gap-2 text-red-400 bg-red-500/10 p-2 border border-red-500/20 justify-center">
