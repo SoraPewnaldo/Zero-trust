@@ -35,6 +35,9 @@ services:
         condition: service_healthy
     networks:
       - prod-network
+    volumes:
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/"]
       interval: 30s
