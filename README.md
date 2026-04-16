@@ -146,4 +146,4 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions including SSL setup.
 
 ---
 
-**Capstone Team (Maintainers):** SoraPewnaldo, Aakhya Chhauhan, Ritik Arora, Jivaj Arora
+**Capstone Team (Maintainers):** Ayush Dakwal, Aakhya Chhauhan, Ritik Arora, Jivaj Arora
