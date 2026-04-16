@@ -7,6 +7,13 @@ pipeline {
         DOCKER_BACKEND_IMAGE = "zeroiam-backend:${SAFE_BRANCH}-${env.BUILD_ID}"
     }
 
+    triggers {
+        // Poll GitHub every 2 minutes for changes (works locally)
+        pollSCM('*/2 * * * *')
+        // Also enable GitHub Hook Trigger (if behind a proxy/tunnel)
+        githubPush()
+    }
+
     stages {
         stage('Checkout') {
             steps {
