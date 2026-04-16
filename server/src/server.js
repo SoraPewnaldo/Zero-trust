@@ -142,7 +142,7 @@ const handleShutdown = (signal) => {
   setTimeout(() => {
     console.error('⏱️  Shutdown timeout — forcing exit.');
     process.exit(1);
-  }, 10_000);
+  }, 10000);
 };
 
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
