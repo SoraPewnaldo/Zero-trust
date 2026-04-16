@@ -15,6 +15,9 @@ import userRoutes from './routes/user.js';
 import resourceRoutes from './routes/resources.js';
 const app = express();
 
+// Trust Nginx as a proxy so rate limits work correctly
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
