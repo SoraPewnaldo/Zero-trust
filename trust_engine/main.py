@@ -75,7 +75,8 @@ def fetch_windows_data() -> dict:
     Falls back to safe defaults if the agent is not running.
     """
     try:
-        resp = requests.get(WINDOWS_AGENT_URL, timeout=15)
+        headers = {"ngrok-skip-browser-warning": "69420"}
+        resp = requests.get(WINDOWS_AGENT_URL, headers=headers, timeout=15)
         data = resp.json()
         print(f"  ✅ Windows Agent     : Connected")
         print(f"     Firewall          : {'ON' if data.get('firewall_enabled') else 'OFF'}")
