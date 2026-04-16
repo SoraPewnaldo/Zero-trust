@@ -106,10 +106,7 @@ const ScanResultSchema = new Schema({
   timestamps: true
 });
 
-// Indexes
-ScanResultSchema.index({
-  scanId: 1
-});
+// Composite indexes (scanId unique index auto-created by schema above)
 ScanResultSchema.index({
   userId: 1,
   createdAt: -1

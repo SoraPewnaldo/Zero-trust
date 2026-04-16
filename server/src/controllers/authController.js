@@ -46,8 +46,7 @@ export const login = async (req, res) => {
           userAgent: req.headers['user-agent']
         },
         details: {
-          reason: 'User not found',
-          attemptedPassword: password
+          reason: 'User not found'
         },
         timestamp: new Date()
       });
@@ -83,8 +82,7 @@ export const login = async (req, res) => {
           userAgent: req.headers['user-agent']
         },
         details: {
-          reason: 'Invalid password',
-          attemptedPassword: password
+          reason: 'Invalid password'
         },
         timestamp: new Date()
       });

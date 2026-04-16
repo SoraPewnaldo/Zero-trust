@@ -3,6 +3,7 @@ import { User } from '../models/User.js';
 import { Device } from '../models/Device.js';
 import { Resource } from '../models/Resource.js';
 import { AuditLog } from '../models/AuditLog.js';
+import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -203,17 +204,6 @@ export const getScanLogs = async (req, res) => {
       timestamp: -1
     }).limit(Number(limit)).lean();
     const [scans, auditLogs] = await Promise.all([scanPromise, auditPromise]);
-    console.log('DEBUG: Scans found:', scans.length);
-    console.log('DEBUG: Audit logs found:', auditLogs.length);
-    if (scans.length > 0) {
-      console.log('DEBUG: Scans content detail:', JSON.stringify(scans.map(s => ({
-        id: s._id,
-        user: s.userId && typeof s.userId === 'object' && 'username' in s.userId ? s.userId.username : s.userId || 'Unknown',
-        score: s.trustScore,
-        decision: s.decision,
-        resource: s.resourceId && typeof s.resourceId === 'object' && 'name' in s.resourceId ? s.resourceId.name : 'Unknown'
-      }))));
-    }
 
     // 4. Map AuditLog entries to ScanResult shape
     const mappedAuditLogs = await Promise.all(auditLogs.map(async log => {
@@ -352,8 +342,6 @@ export const getScanLogs = async (req, res) => {
         factors: factors
       };
     }));
-    console.log('DEBUG: Mapped Audit scores:', mappedAuditLogs.map(a => a.trustScore));
-
     // 5. Merge and sort
     const combinedLogs = [...scans, ...mappedAuditLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, Number(limit));
     const totalScans = await ScanResult.countDocuments(scanFilter);
@@ -576,8 +564,7 @@ export const createUser = async (req, res) => {
     }
 
     // Hash password
-    const bcrypt = await import('bcryptjs');
-    const passwordHash = await bcrypt.default.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       username,
       email,

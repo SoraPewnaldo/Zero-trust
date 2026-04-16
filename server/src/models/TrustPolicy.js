@@ -162,10 +162,7 @@ const TrustPolicySchema = new Schema({
   timestamps: true
 });
 
-// Indexes
-TrustPolicySchema.index({
-  policyId: 1
-});
+// Composite indexes (policyId unique index auto-created by schema above)
 TrustPolicySchema.index({
   status: 1,
   effectiveFrom: 1

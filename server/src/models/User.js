@@ -51,13 +51,7 @@ const UserSchema = new Schema({
   timestamps: true
 });
 
-// Indexes
-UserSchema.index({
-  username: 1
-});
-UserSchema.index({
-  email: 1
-});
+// Composite and sort indexes (unique indexes are auto-created by schema above)
 UserSchema.index({
   role: 1,
   status: 1

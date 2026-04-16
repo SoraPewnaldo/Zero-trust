@@ -66,10 +66,7 @@ const AuditLogSchema = new Schema({
   timestamps: true
 });
 
-// Indexes
-AuditLogSchema.index({
-  eventId: 1
-});
+// Composite and sort indexes (eventId unique index auto-created by schema above)
 AuditLogSchema.index({
   eventType: 1,
   timestamp: -1

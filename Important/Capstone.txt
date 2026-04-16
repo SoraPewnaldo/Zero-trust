@@ -1,0 +1,239 @@
+Capstone 
+Automated Trust Scoring Engine for Zero Trust Access in Hybrid Cloud Environments
+
+
+DOMAIN
+Cybersecurity | Zero Trust Architecture | Cloud Security | DevSecOps
+
+
+TECH STACK
+Frontend: React.js
+Backend: Node.js, Express.js
+Security Engine: Python (Flask/FastAPI)
+Database: MongoDB
+Security Tools: OSQuery, Nmap
+Containerization: Docker, Docker Compose
+CI/CD: GitHub Actions
+Architecture Style: Microservices
+Stack Preference: MERN Stack
+
+
+--------------------------------------------------
+1. PROBLEM STATEMENT
+--------------------------------------------------
+Traditional perimeter-based security models rely heavily on static credentials and network location, which are ineffective in modern hybrid cloud environments. With the rise of remote access, BYOD policies, and insider threats, organizations require a security mechanism that continuously verifies device trust before granting access to cloud resources.
+
+This project addresses the need for a dynamic, risk-based access control system by implementing an Automated Trust Scoring Engine aligned with Zero Trust Architecture principles.
+
+
+--------------------------------------------------
+2. PROJECT OBJECTIVES
+--------------------------------------------------
+- Analyze security risks in hybrid cloud environments
+- Design a Zero Trust-based access control system
+- Implement automated device health verification
+- Develop a trust scoring algorithm (0–100)
+- Enforce access decisions based on risk levels
+- Containerize services using Docker
+- Implement CI/CD for automated build and deployment
+
+
+--------------------------------------------------
+3. SYSTEM ARCHITECTURE
+--------------------------------------------------
+The system follows a microservice-based Zero Trust architecture.
+
+Components:
+1. React Frontend (User Dashboard)
+2. Node.js Gatekeeper API
+3. Python Trust Engine (Security Microservice)
+4. MongoDB Database
+5. OSQuery & Nmap for device checks
+6. Docker containers for each service
+7. Jenkins for CI/CD
+
+Architecture Flow:
+User → React UI → Gatekeeper API → Trust Engine → MongoDB → Access Decision
+
+
+--------------------------------------------------
+4. ZERO TRUST PRINCIPLES APPLIED
+--------------------------------------------------
+- Never Trust, Always Verify
+- Identity and Device-Based Access
+- Least Privilege Access
+- Continuous Verification
+- Risk-Based Decision Making
+- Centralized Monitoring and Logging
+
+
+--------------------------------------------------
+5. FRONTEND IMPLEMENTATION (REACT.JS)
+--------------------------------------------------
+The frontend is built using React.js and serves as the user interface for initiating device scans and viewing trust decisions.
+
+Key Components:
+- Login Page
+- Device Scan Trigger Page
+- Trust Score Dashboard
+- Access Decision Display
+- Scan History Logs
+
+UI States:
+- Trust Score ≥ 80 → Access Granted
+- Trust Score 60–79 → MFA Required
+- Trust Score < 60 → Access Blocked
+
+
+--------------------------------------------------
+6. BACKEND IMPLEMENTATION (NODE.JS + EXPRESS)
+--------------------------------------------------
+The Gatekeeper API acts as the Policy Enforcement Point (PEP).
+
+Responsibilities:
+- Receive access requests from frontend
+- Communicate with Python Trust Engine
+- Apply Zero Trust access policies
+- Store scan results in MongoDB
+- Return access decisions to frontend
+
+Sample Logic:
+- Forward device data to Trust Engine
+- Receive trust score and decision
+- Log results
+- Respond to user
+
+
+--------------------------------------------------
+7. PYTHON TRUST ENGINE (SECURITY CORE)
+--------------------------------------------------
+The Trust Engine functions as the Policy Decision Point (PDP).
+
+Responsibilities:
+- Execute OSQuery checks
+- Perform Nmap port scans
+- Evaluate device health
+- Calculate trust score
+- Return access decision
+
+Device Health Checks:
+- Firewall enabled
+- Antivirus active
+- OS up to date
+- No risky open ports
+- Recent scan timestamp
+
+
+--------------------------------------------------
+8. TRUST SCORING MODEL
+--------------------------------------------------
+Scoring Criteria:
+
+Firewall Enabled          : 25 points
+Antivirus Running         : 25 points
+OS Updated                : 20 points
+Safe Network Ports        : 20 points
+Recent Device Scan        : 10 points
+------------------------------------
+TOTAL                     : 100 points
+
+
+Decision Policy:
+- Score ≥ 80 → ALLOW
+- Score 60–79 → MFA REQUIRED
+- Score < 60 → BLOCK
+
+
+--------------------------------------------------
+9. DATABASE DESIGN (MONGODB)
+--------------------------------------------------
+Collection: trust_logs
+
+Schema:
+{
+  userId: String,
+  deviceId: String,
+  trustScore: Number,
+  decision: String,
+  scanTime: Date
+}
+
+Purpose:
+- Auditing
+- Compliance
+- Continuous monitoring
+- Security analytics
+
+
+--------------------------------------------------
+10. CONTAINERIZATION USING DOCKER
+--------------------------------------------------
+Each service runs in an isolated Docker container.
+
+Containers:
+- frontend (React)
+- backend (Node.js)
+- trust-engine (Python)
+- mongo (Database)
+
+Benefits:
+- Environment consistency
+- Scalability
+- Isolation
+- Production readiness
+
+Docker Compose orchestrates all services.
+
+
+--------------------------------------------------
+11. CI/CD PIPELINE (JENKINS)
+--------------------------------------------------
+Pipeline Steps:
+1. Code push to repository
+2. Automated build
+3. Docker image creation
+4. Service deployment
+
+Advantages:
+- Faster development cycles
+- Reduced human error
+- DevSecOps alignment
+
+
+--------------------------------------------------
+12. SECURITY ANALYSIS & EVALUATION
+--------------------------------------------------
+Attack Scenarios Tested:
+- Untrusted device access
+- Missing antivirus
+- Outdated OS
+- Open risky ports
+
+Results:
+- Access denied for low trust scores
+- MFA enforced for medium risk
+- Full access only for trusted devices
+
+The system successfully prevents unauthorized access and enforces Zero Trust policies.
+
+
+--------------------------------------------------
+13. CONCLUSION
+--------------------------------------------------
+The Automated Trust Scoring Engine demonstrates how Zero Trust Architecture can be effectively implemented using modern web technologies, security tools, and DevOps practices. By dynamically evaluating device health and enforcing risk-based access decisions, the system enhances security in hybrid cloud environments.
+
+
+--------------------------------------------------
+14. FUTURE SCOPE
+--------------------------------------------------
+- AI-based anomaly detection
+- SOAR integration
+- Integration with cloud IAM (AWS/Azure)
+- Zero Trust for IoT devices
+- Infrastructure as Code (Terraform)
+- Advanced SIEM integration
+
+
+--------------------------------------------------
+END OF FILE
+--------------------------------------------------

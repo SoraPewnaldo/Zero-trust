@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { User } from '../models/User.js';
+import { TrustPolicy } from '../models/TrustPolicy.js';
 import { Device } from '../models/Device.js';
 import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
@@ -23,7 +25,7 @@ export const initiateScan = async (req, res) => {
     }
 
     // Fetch User to check MFA status
-    const user = await import('../models/User.js').then(m => m.User.findById(userId));
+    const user = await User.findById(userId);
     if (!user) {
       res.status(404).json({
         error: 'User not found'
@@ -32,7 +34,6 @@ export const initiateScan = async (req, res) => {
     }
 
     // Fetch Active Trust Policy
-    const TrustPolicy = await import('../models/TrustPolicy.js').then(m => m.TrustPolicy);
     const policy = await TrustPolicy.findOne({
       status: 'active'
     }).sort({

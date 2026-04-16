@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # -------------------------
@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
     container_name: zeroiam-frontend-dev
     ports:
-      - "5173:8080"
+      - "5173:5173"
     environment:
       - VITE_API_URL=/api
       - BACKEND_URL=http://backend:3001

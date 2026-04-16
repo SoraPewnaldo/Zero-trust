@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { connectDatabase } from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -11,6 +13,26 @@ import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.js';
 import resourceRoutes from './routes/resources.js';
 const app = express();
+
+// Security headers
+app.use(helmet());
+
+// Rate limiters
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 login attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please wait 15 minutes.' }
+});
 
 // Middleware
 app.use(cors({
@@ -37,11 +59,12 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth/login', authLimiter); // Strict: 5 attempts / 15 min
 app.use('/api/auth', authRoutes);
-app.use('/api/verify', verificationRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/resources', resourceRoutes);
+app.use('/api/verify', apiLimiter, verificationRoutes);
+app.use('/api/admin', apiLimiter, adminRoutes);
+app.use('/api/user', apiLimiter, userRoutes);
+app.use('/api/resources', apiLimiter, resourceRoutes);
 
 // 404 handler
 app.use((req, res) => {

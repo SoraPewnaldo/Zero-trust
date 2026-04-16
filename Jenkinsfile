@@ -1,4 +1,4 @@
-    pipeline {
+pipeline {
     agent any
 
     environment {
@@ -61,32 +61,7 @@
             }
         }
 
-        stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    echo "Deploying to AWS EC2 (15.207.15.101)..."
-                    
-                    // Use withCredentials for better compatibility on Windows hosts
-                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'PEM_KEY')]) {
-                        // Secure your .pem key using PowerShell (Native Windows ACLs are more robust than icacls)
-                        powershell """
-                            \$path = \"${PEM_KEY}\"
-                            \$acl = Get-Acl \$path
-                            \$acl.SetAccessRuleProtection(\$true, \$false)
-                            \$acl.Access | ForEach-Object { \$acl.RemoveAccessRule(\$_) }
-                            \$user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-                            \$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(\$user, \"FullControl\", \"Allow\")
-                            \$acl.AddAccessRule(\$rule)
-                            Set-Acl \$path \$acl
-                        """
-                        bat "ssh -i %PEM_KEY% -o StrictHostKeyChecking=no ubuntu@15.207.15.101 \"cd soraiam && git fetch origin && git reset --hard origin/main && docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d --build\""
-                    }
-                }
-            }
-        }
+
     }
 
     post {
