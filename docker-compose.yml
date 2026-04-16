@@ -63,6 +63,9 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
+      - WINDOWS_AGENT_URL=http://host.docker.internal:5001/status
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - dev-network
 
