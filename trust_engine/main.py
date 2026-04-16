@@ -175,22 +175,32 @@ def run_scan():
 
     # ── DEMO MODE (AWS / cloud deployment) ──────────────────
     if DEMO_MODE:
-        print("  ℹ️  Demo Mode — returning safe demonstration result")
+        import random
+        print("  ℹ️  Demo Mode — returning randomized simulation result")
+        
+        # Randomize device posture factors to simulate different devices
+        fw_enabled = random.choice([True, True, True, False]) # 75% chance firewall is ON
+        av_running = random.choice([True, True, False])       # 66% chance AV is ON
+        os_updated = random.choice([True, False])             # 50% chance OS is updated
+        has_risky_ports = random.choice([True, False, False]) # 33% chance of risky ports
+        
+        open_ports_list = [445, 3389] if has_risky_ports else [80, 443]
+
         demo_results = {
-            "firewall_enabled": True,
-            "antivirus_running": True,
-            "antivirus_name": "ZeroIAM Demo AV",
-            "os_version": "Demo Environment",
-            "os_updated": True,
-            "pending_updates": 0,
-            "open_ports": [],
-            "risky_ports_found": False,
+            "firewall_enabled": fw_enabled,
+            "antivirus_running": av_running,
+            "antivirus_name": "ZeroIAM Demo AV (" + random.choice(["Active", "Inactive", "Outdated"]) + ")",
+            "os_version": "Demo Environment Node-" + str(random.randint(10,99)),
+            "os_updated": os_updated,
+            "pending_updates": random.randint(0, 15) if not os_updated else 0,
+            "open_ports": open_ports_list,
+            "risky_ports_found": has_risky_ports,
             "recent_scan": True,
             "agent_online": False,
             "demo_mode": True
         }
         trust_score = calculate_trust_score(demo_results)
-        print(f"\n🏆 Demo Trust Score: {trust_score}/100")
+        print(f"\n🏆 Simulated Trust Score: {trust_score}/100")
         print("═" * 50 + "\n")
         return jsonify({
             "trust_score": trust_score,

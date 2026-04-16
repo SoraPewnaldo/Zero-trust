@@ -91,6 +91,7 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
+      - DEMO_MODE=true
       - WINDOWS_AGENT_URL=${WINDOWS_AGENT_URL:-http://host.docker.internal:5001/status}
     extra_hosts:
       - "host.docker.internal:host-gateway"
