@@ -13,6 +13,10 @@ pipeline {
         SAFE_BRANCH = "${CURRENT_BRANCH.replaceAll('/', '-')}"
         DOCKER_FRONTEND_IMAGE = "zeroiam-frontend:${SAFE_BRANCH}-${env.BUILD_ID}"
         DOCKER_BACKEND_IMAGE  = "zeroiam-backend:${SAFE_BRANCH}-${env.BUILD_ID}"
+        
+        // Force Docker to use the default Windows pipe
+        DOCKER_HOST = "npipe:////./pipe/docker_engine"
+        
         // EC2 config (stored as Jenkins Credentials)
         EC2_USER = "ubuntu"
         APP_DIR  = "/home/ubuntu/zeroiam"
