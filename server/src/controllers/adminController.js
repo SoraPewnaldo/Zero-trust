@@ -7,6 +7,14 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * Escapes special regex characters from user-supplied strings.
+ * Prevents ReDoS (Regular Expression Denial of Service) attacks.
+ * @param {string} str - Raw user input
+ * @returns {string} - Safely escaped string
+ */
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
  * Get admin dashboard statistics
  */
 export const getDashboardStats = async (req, res) => {
@@ -136,7 +144,7 @@ export const getScanLogs = async (req, res) => {
     if (username && !userId) {
       const matchingUsers = await User.find({
         username: {
-          $regex: username,
+          $regex: escapeRegex(username),
           $options: 'i'
         }
       }).select('_id');
@@ -150,7 +158,7 @@ export const getScanLogs = async (req, res) => {
     if (resource && !resourceId) {
       const matchingResources = await Resource.find({
         name: {
-          $regex: resource,
+          $regex: escapeRegex(resource),
           $options: 'i'
         }
       }).select('_id');
@@ -177,7 +185,7 @@ export const getScanLogs = async (req, res) => {
     }
     if (username) {
       auditFilter['actor.username'] = {
-        $regex: username,
+        $regex: escapeRegex(username),
         $options: 'i'
       };
     }
@@ -186,7 +194,7 @@ export const getScanLogs = async (req, res) => {
     }
     if (resource) {
       auditFilter['target.name'] = {
-        $regex: resource,
+        $regex: escapeRegex(resource),
         $options: 'i'
       };
     }
