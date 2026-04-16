@@ -1,47 +1,72 @@
+# Dependencies
+node_modules/
+server/node_modules/
+trust_engine/node_modules/
+bower_components/
+
+# Build outputs
+dist/
+build/
+server/dist/
+.next/
+out/
+.parcel-cache/
+.cache/
+.eslintcache
+
+# Environment & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+server/.env
+*.pem
+*.key
+auth_config.json
+
+# Database
+mongo-data/
+*.db
+*.sqlite
+
+# Python (Trust Engine)
+venv/
+trust_engine/venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+trust_engine/*.log
+trust_engine/*_out.txt
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
+server_logs.txt
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# System / OS
 .DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDEs
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sln
-*.sw?
+*.user
 
-# Backend Data
-mongo-data/
-.env
-server/.env
-*.log
-*_out.txt
-*_out_2.txt
-trust_engine/*.log
-trust_engine/*_out.txt
-server_logs.txt
-
-# Python
-venv/
-__pycache__/
-*.py[cod]
-*$py.class
-trust_engine/venv/
-
-# System
-.DS_Store
-Thumbs.db
+# Frontend Misc
+.vite/
+.vercel
