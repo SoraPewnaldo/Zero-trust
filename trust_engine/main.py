@@ -9,8 +9,14 @@ Data sources:
      - Must be running natively on the Windows host before scanning!
   2. nmap — real port scan against the Windows host IP
   3. All results are deterministic: same system state -> same score
+
+DEMO_MODE=true (set in docker-compose.prod.yml or env):
+  - Skips Windows Agent + nmap entirely
+  - Returns a clean deterministic demo result (score=80)
+  - Used for AWS cloud deployments where no Windows host exists
 """
 
+import os
 import subprocess
 import json
 import requests
@@ -20,11 +26,17 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 # The Windows host is accessible from Docker using this hostname
-WINDOWS_AGENT_URL = "http://host.docker.internal:5001/status"
+WINDOWS_AGENT_URL = os.environ.get("WINDOWS_AGENT_URL", "http://host.docker.internal:5001/status")
 # Scan the Windows host, not the container itself
 HOST_SCAN_TARGET = "host.docker.internal"
 # Ports considered risky for a workstation device
 RISKY_PORTS = [21, 23, 445, 3389, 4444, 5900, 6666, 8888]
+
+# DEMO_MODE: skip real scans, return clean deterministic result
+DEMO_MODE = os.environ.get("DEMO_MODE", "false").lower() in ("true", "1", "yes")
+
+if DEMO_MODE:
+    print("  ℹ️  DEMO_MODE=true — Real scanning disabled. Demo results will be returned.")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -160,7 +172,32 @@ def run_scan():
     print(f"🚀 Scan Request — {scan_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("═" * 50)
 
-    # Gather real data from both sources
+    # ── DEMO MODE (AWS / cloud deployment) ──────────────────
+    if DEMO_MODE:
+        print("  ℹ️  Demo Mode — returning safe demonstration result")
+        demo_results = {
+            "firewall_enabled": True,
+            "antivirus_running": True,
+            "antivirus_name": "ZeroIAM Demo AV",
+            "os_version": "Demo Environment",
+            "os_updated": True,
+            "pending_updates": 0,
+            "open_ports": [],
+            "risky_ports_found": False,
+            "recent_scan": True,
+            "agent_online": False,
+            "demo_mode": True
+        }
+        trust_score = calculate_trust_score(demo_results)
+        print(f"\n🏆 Demo Trust Score: {trust_score}/100")
+        print("═" * 50 + "\n")
+        return jsonify({
+            "trust_score": trust_score,
+            "details": demo_results,
+            "timestamp": scan_time.isoformat()
+        })
+
+    # ── REAL SCAN MODE (Windows dev machine) ────────────────
     windows_data = fetch_windows_data()
     net_data = scan_nmap()
 

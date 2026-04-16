@@ -634,17 +634,28 @@ export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const { department, role, status, clearanceLevel } = req.body;
+
+    // Validate allowed values to prevent privilege escalation
+    const allowedRoles = ['employee', 'admin'];
+    const allowedStatuses = ['active', 'suspended', 'inactive'];
+
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role value' });
+    }
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
     
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update fields
-    if (department) user.department = department;
-    if (role) user.role = role;
-    if (status) user.isActive = status === 'active';
-    if (clearanceLevel) user.clearanceLevel = clearanceLevel;
+    // Update only whitelisted fields
+    if (department !== undefined) user.department = department;
+    if (role !== undefined) user.role = role;
+    if (status !== undefined) user.status = status;       // 'active' | 'suspended' | 'inactive'
+    if (clearanceLevel !== undefined) user.clearanceLevel = clearanceLevel;
     
     await user.save();
 
@@ -681,7 +692,7 @@ export const updateUser = async (req, res) => {
         username: user.username,
         department: user.department,
         role: user.role,
-        isActive: user.isActive,
+        status: user.status,
         clearanceLevel: user.clearanceLevel
       }
     });

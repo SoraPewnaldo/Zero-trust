@@ -1,0 +1,154 @@
+# ============================================================
+# ZeroIAM — Production Docker Compose (AWS / Remote Demo)
+# ============================================================
+# Quick Start on EC2:
+#   git clone https://github.com/SoraPewnaldo/Zero-trust.git
+#   cd Zero-trust
+#   cp .env.prod.example .env.prod
+#   nano .env.prod                      # fill JWT_SECRET + MONGODB_URI
+#   docker-compose -f docker-compose.prod.yml up -d --build
+#   docker-compose -f docker-compose.prod.yml exec backend \
+#       node src/scripts/initDb.js
+#   # App is live at http://<your-ec2-ip>
+# ============================================================
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # FRONTEND  ─  Vite Build + Nginx (SPA + /api proxy)
+  # Listens on port 80 (and 443 for SSL).
+  # ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_APP_VERSION: "1.0.0"
+    image: zeroiam-frontend:prod
+    container_name: zeroiam-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ──────────────────────────────────────────────────────────
+  # BACKEND  ─  Node.js + Express API (internal only)
+  # NOT exposed to public internet — Nginx proxies /api/* here.
+  # ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: zeroiam-backend:prod
+    container_name: zeroiam-backend
+    restart: always
+    expose:
+      - "3001"
+    env_file:
+      - .env.prod
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      trust_engine:
+        condition: service_healthy
+    networks:
+      - prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  # ──────────────────────────────────────────────────────────
+  # TRUST ENGINE  ─  Python Flask PDP (internal only)
+  # In AWS demo mode: Windows Agent offline → safe fallback.
+  # ──────────────────────────────────────────────────────────
+  trust_engine:
+    build:
+      context: ./trust_engine
+      dockerfile: Dockerfile
+    image: zeroiam-trust-engine:prod
+    container_name: zeroiam-trust-engine
+    restart: always
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - WINDOWS_AGENT_URL=http://host.docker.internal:5001/status
+      - DEMO_MODE=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - prod-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ──────────────────────────────────────────────────────────
+  # MONGODB  ─  Persistent Database (internal only)
+  # NEVER expose port 27017 publicly.
+  # ──────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: zeroiam-mongodb
+    restart: always
+    expose:
+      - "27017"
+    environment:
+      - MONGO_INITDB_DATABASE=zeroiam_prod
+    volumes:
+      - mongodb_prod_data:/data/db
+    networks:
+      - prod-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  # ──────────────────────────────────────────────────────────
+  # CERTBOT  ─  Let's Encrypt SSL (optional, run once)
+  # Step 1 (stop nginx first, then):
+  #   docker-compose -f docker-compose.prod.yml run --rm certbot \
+  #     certonly --standalone -d YOUR_DOMAIN \
+  #     --email you@email.com --agree-tos --no-eff-email
+  # Step 2: Uncomment the HTTPS block in nginx/conf.d/zeroiam.conf
+  # Step 3: Rebuild frontend image: docker-compose ... up -d --build frontend
+  # ──────────────────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: zeroiam-certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    profiles:
+      - ssl
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --quiet; done"
+
+networks:
+  prod-network:
+    driver: bridge
+
+volumes:
+  mongodb_prod_data:
+  certbot_certs:
+  certbot_webroot:

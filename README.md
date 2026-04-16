@@ -81,51 +81,68 @@ A non-relational database used to store:
 
 ## 🚀 CI/CD Pipeline & AWS Deployment
 
-To simulate a real-world enterprise deployment lifecycle, ZeroIAM utilizes an automated Jenkins CI/CD pipeline integrated with AWS EC2.
+ZeroIAM uses a Jenkins CI/CD pipeline integrated with AWS EC2 for real-world deployment simulation:
 
-1. **Source Control Integration**: Pushes to the `main` branch trigger a GitHub Webhook sent to Jenkins.
-2. **Automated Validation**:
-   - Jenkins clones the codebase and runs `npm run lint` on the React frontend.
-   - Jenkins executes an isolated `vitest` suite against the Node.js backend models to guarantee business logic integrity before deployment.
-3. **Containerization**: If tests pass, Docker and `docker-compose` build isolated images for the Frontend (served via Nginx), the Backend, the Trust Engine, and a MongoDB container.
-4. **Live Deployment**: Jenkins securely SSHs into the active AWS EC2 instance (`15.207.15.101`), pulls down older containers, purges stale images, and spins up the newly built network.
+1. **Trigger**: Pushes to `main` branch fire a GitHub webhook to Jenkins
+2. **Validation**: Jenkins runs `eslint` lint checks + `vitest` unit tests
+3. **Build**: Docker builds multi-stage images for all 4 services
+4. **Deploy**: Jenkins SSHs into the EC2 instance and runs the production compose stack
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the complete AWS deployment guide.
 
 ---
 
 ## 🔐 Security Deep Dive: The Trust Score Algorithm
 
-Access is not binary; it is fluid. The Trust Engine evaluates multiple vectors:
+Access is not binary; it is fluid. The Trust Engine evaluates multiple security vectors:
 
-- **Base Score**: Everyone starts at a baseline.
-- **Positive Context**: Using a registered corporate device, having an active firewall, or connecting from an allowed geolocation adds points.
-- **Negative Context**: Outdated OS patches or risky open ports dock points.
+| Factor | Points | Check |
+|--------|--------|-------|
+| Firewall Enabled | 25 | Windows Defender Firewall or equivalent |
+| Antivirus Running | 25 | Real-time AV protection active |
+| OS Updated | 20 | No pending critical patches |
+| Safe Network Ports | 20 | No risky ports (21, 23, 445, 3389, etc.) open |
+| Scan Freshness | 10 | Real-time scan (always passes) |
 
 **Enforcement Logic:**
 
-- **Score > 80**: Transparent access granted (Allow).
-- **Score 50-79**: Suspicious context. Access heavily restricted; user is forced to solve a dynamic Multi-Factor Authentication (OTP) challenge to proceed.
-- **Score < 50**: High risk. Access immediately Denied; security teams are alerted via the Audit Log.
+| Score | Decision | Action |
+|-------|----------|--------|
+| ≥ 80 | **ALLOW** | Transparent access granted |
+| 60–79 | **MFA Required** | Step-up authentication challenge |
+| < 60 | **BLOCKED** | Access denied, audit log created |
 
 ---
 
-## 📖 Installation & Local Development
-
-For reviewers wishing to test the application locally:
+## 📚 Local Development
 
 ```bash
-# 1. Clone & Install
+# 1. Clone & start (Docker)
 git clone https://github.com/SoraPewnaldo/Zero-trust.git
 cd Zero-trust
-npm install && cd server && npm install
+docker-compose up -d
+docker-compose exec backend node src/scripts/initDb.js
 
-# 2. Boot Data & Dev Servers
-npm run init-db
-npm run dev:all
+# App: http://localhost:5173
 ```
 
-- **Live Portal**: `http://localhost:5173`
-- **Admin**: `sora` / `password123`
-- **Employee**: `joe` / `password123`
+**Credentials:**
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `sora` | `sora` |
+| Employee | `sarah.johnson` | `password123` |
+
+---
+
+## 🌐 AWS Demo Deployment (One Command)
+
+```bash
+# On a fresh Ubuntu 22.04 EC2 instance:
+curl -fsSL https://raw.githubusercontent.com/SoraPewnaldo/Zero-trust/main/scripts/deploy.sh | bash
+# App will be live at http://<your-ec2-ip>
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions including SSL setup.
 
 ---
 

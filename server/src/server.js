@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { connectDatabase } from './config/database.js';
@@ -39,10 +40,13 @@ app.use(cors({
   origin: config.cors.origin,
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.urlencoded({
-  extended: true
+  extended: true,
+  limit: config.bodyLimit
 }));
+// Sanitize req.body against MongoDB operator injection ($where, $gt, etc.)
+app.use(mongoSanitize());
 
 // Request logging
 app.use((req, res, next) => {
@@ -77,13 +81,14 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Start server
+let server;
 const startServer = async () => {
   try {
     // Connect to database
     await connectDatabase();
 
-    // Start listening
-    app.listen(config.port, () => {
+    // Start listening — store reference for graceful shutdown
+    server = app.listen(config.port, () => {
       console.log('\n🚀 ZeroIAM Backend Server');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log(`📡 Server running on port ${config.port}`);
@@ -91,6 +96,7 @@ const startServer = async () => {
       console.log(`🔗 API URL: http://localhost:${config.port}`);
       console.log(`🗄️  MongoDB: Connected`);
       console.log(`🔐 CORS Origin: ${config.cors.origin}`);
+      console.log(`🐍 Trust Engine: ${config.trustEngine.url}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n📚 Available endpoints:');
       console.log('   POST   /api/auth/login');
@@ -115,14 +121,38 @@ const startServer = async () => {
   }
 };
 
-// Handle shutdown gracefully
-process.on('SIGTERM', () => {
-  console.log('\n⚠️  SIGTERM received, shutting down gracefully...');
-  process.exit(0);
+// Graceful shutdown — stop accepting requests, close DB, exit cleanly
+const handleShutdown = (signal) => {
+  console.log(`\n⚠️  ${signal} received, shutting down gracefully...`);
+  if (server) {
+    server.close(async () => {
+      console.log('🔒 HTTP server closed');
+      const { disconnectDatabase } = await import('./config/database.js');
+      await disconnectDatabase().catch(() => {});
+      console.log('✅ ZeroIAM shutdown complete. Bye!');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+  // Force-exit safety net if graceful shutdown gets stuck
+  setTimeout(() => {
+    console.error('⏱️  Shutdown timeout — forcing exit.');
+    process.exit(1);
+  }, 10_000);
+};
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT',  () => handleShutdown('SIGINT'));
+
+// Guard against unhandled errors crashing silently
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  process.exit(1);
 });
-process.on('SIGINT', () => {
-  console.log('\n⚠️  SIGINT received, shutting down gracefully...');
-  process.exit(0);
+process.on('unhandledRejection', (reason) => {
+  console.error('💥 Unhandled Promise Rejection:', reason);
+  process.exit(1);
 });
 
 // Start the server

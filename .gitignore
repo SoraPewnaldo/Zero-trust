@@ -20,10 +20,14 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.prod              # Production secrets — NEVER commit this
 server/.env
 *.pem
 *.key
 auth_config.json
+
+# SSL Certificates (managed by Certbot on the server)
+certbot_certs/
 
 # Database
 mongo-data/
@@ -40,6 +44,13 @@ __pycache__/
 *$py.class
 trust_engine/*.log
 trust_engine/*_out.txt
+
+# PyInstaller compiled binaries & build artifacts
+trust_engine/dist/
+trust_engine/build/
+trust_engine/*.spec.bak
+*.exe
+*.spec
 
 # Logs
 logs/

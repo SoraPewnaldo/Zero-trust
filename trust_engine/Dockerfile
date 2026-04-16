@@ -1,31 +1,30 @@
+# Trust Engine — Python Flask (PDP)
+FROM python:3.11-slim
 
-# Use python slim image
-FROM python:3.9-slim
-
-# Install system dependencies
-# nmap is required for port scanning
-# osquery is not easily installed in slim debian without adding repos, 
-# so we rely on the fallback simulation or install it if critical.
-# For now, just nmap.
-RUN apt-get update && apt-get install -y \
+# Install system dependencies: nmap for port scanning, curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nmap \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Create a non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
 WORKDIR /app
 
-# Copy requirements
+# Copy and install Python dependencies first (better layer caching)
 COPY requirements.txt .
-
-# Install python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+USER appuser
+
 # Expose port
 EXPOSE 5000
 
-# Run the application
-CMD ["python", "main.py"]
+# -u forces unbuffered Python output so logs appear immediately in docker logs
+CMD ["python", "-u", "main.py"]

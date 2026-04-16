@@ -60,9 +60,10 @@ Password: password123
 
 ## Application URLs
 
-- **Frontend**: http://localhost:8080
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3001
 - **Health Check**: http://localhost:3001/health
+- **Trust Engine**: http://localhost:5000/health
 
 ---
 

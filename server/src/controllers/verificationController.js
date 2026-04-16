@@ -7,6 +7,7 @@ import { Resource } from '../models/Resource.js';
 import { ScanResult } from '../models/ScanResult.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { ContextDetectionService } from '../services/contextDetectionService.js';
+import { config } from '../config/index.js';
 
 /**
  * Initiate trust scan
@@ -111,13 +112,12 @@ export const initiateScan = async (req, res) => {
     let engineDetails = {};
     try {
       console.log('🔄 Calling Python Trust Engine (PDP)...');
-      const pythonEngineUrl = process.env.TRUST_ENGINE_URL || 'http://127.0.0.1:5000/scan';
-      const engineResponse = await axios.post(pythonEngineUrl, {
+      const engineResponse = await axios.post(config.trustEngine.url, {
         userId,
         deviceId: device.deviceId,
         resource: resource.name
       }, {
-        timeout: 5000
+        timeout: config.trustEngine.timeout
       });
       trustScore = engineResponse.data.trust_score;
       engineDetails = engineResponse.data.details;
@@ -218,8 +218,8 @@ export const initiateScan = async (req, res) => {
       });
       console.log(`✅ Trust Engine Result: Score=${trustScore}`);
     } catch (engineError) {
-      console.error('❌ Failed to contact Python Trust Engine:', engineError);
-      // Fallback for demo/dev if engine is offline
+      console.error('❌ Failed to contact Python Trust Engine:', engineError.message || engineError);
+      // Fallback: conservative score keeps the user in MFA_REQUIRED territory (not full access)
       trustScore = 65;
       factors.push({
         name: 'Trust Engine Offline',
@@ -228,7 +228,7 @@ export const initiateScan = async (req, res) => {
         score: 0,
         weight: 0,
         impact: 0,
-        details: 'Using fallback score'
+        details: 'Using fallback score — Trust Engine unreachable'
       });
     }
 
@@ -409,8 +409,9 @@ export const verifyMFA = async (req, res) => {
       return;
     }
 
-    // Simplified MFA verification (in production, use proper TOTP validation)
-    const isValidMFA = mfaCode === '123456' || mfaCode.length === 6;
+    // Simplified MFA verification — DEMO MODE: any 6-digit code is accepted.
+    // TODO: Replace with real TOTP (otplib/speakeasy) + mfaSecret from User model.
+    const isValidMFA = mfaCode.length === 6 && /^\d{6}$/.test(mfaCode);
     if (!isValidMFA) {
       scanResult.mfaAttempts = (scanResult.mfaAttempts || 0) + 1;
       await scanResult.save();
