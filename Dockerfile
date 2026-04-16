@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies first for better layer caching
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code (overridden by volume mount in compose, kept for standalone use)
 COPY . .

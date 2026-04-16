@@ -12,9 +12,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install deps (ci = reproducible, respects lockfile)
+# Install deps
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source and build for production
 COPY . .

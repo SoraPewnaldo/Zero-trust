@@ -75,7 +75,7 @@ def fetch_windows_data() -> dict:
     Falls back to safe defaults if the agent is not running.
     """
     try:
-        resp = requests.get(WINDOWS_AGENT_URL, timeout=5)
+        resp = requests.get(WINDOWS_AGENT_URL, timeout=15)
         data = resp.json()
         print(f"  ✅ Windows Agent     : Connected")
         print(f"     Firewall          : {'ON' if data.get('firewall_enabled') else 'OFF'}")
