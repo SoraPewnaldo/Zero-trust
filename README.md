@@ -1,4 +1,8 @@
 # Capstone Project: ZeroIAM (Zero Trust Architecture Platform)
+![ZeroIAM](https://img.shields.io/badge/ZeroIAM-Zero%20Trust%20IAM-blue)
+![Stack](https://img.shields.io/badge/stack-MERN-blueviolet)
+![Architecture](https://img.shields.io/badge/architecture-Microservices-orange)
+![CI/CD](https://img.shields.io/badge/deployment-Jenkins%20%7C%20AWS-green)
 
 <img src="https://img.shields.io/badge/MongoDB-4DB33D?style=for-the-badge&logo=mongodb&logoColor=white">
 <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white">
