@@ -1,9 +1,9 @@
 # Capstone Project: ZeroIAM (Zero Trust Architecture Platform)
 
-![ZeroIAM](https://img.shields.io/badge/ZeroIAM-Zero%20Trust%20IAM-blue)
-![Stack](https://img.shields.io/badge/stack-MERN-blueviolet)
-![Architecture](https://img.shields.io/badge/architecture-Microservices-orange)
-![CI/CD](https://img.shields.io/badge/deployment-Jenkins%20%7C%20AWS-green)
+<img src="https://img.shields.io/badge/MongoDB-4DB33D?style=for-the-badge&logo=mongodb&logoColor=white">
+<img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white">
+<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB">
+<img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white">
 
 **ZeroIAM** is an enterprise-grade Identity and Access Management (IAM) platform developed as a comprehensive Capstone Project. It serves as a practical implementation and demonstration of **Zero Trust Architecture (ZTA)** principles in modern web applications.
 
