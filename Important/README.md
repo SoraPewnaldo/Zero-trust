@@ -1,3 +1,11 @@
+
+<img src="https://img.shields.io/badge/MongoDB-4DB33D?style=for-the-badge&logo=mongodb&logoColor=white">
+<img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white">
+<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB">
+<img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white">
+
+
+
 # 🔐 Automated Trust Scoring Engine for Zero Trust Access
 
 A fullstack cybersecurity project implementing **Zero Trust Architecture** to secure enterprise remote access using **dynamic device trust evaluation** and **role-based access control**.
