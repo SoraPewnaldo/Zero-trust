@@ -1,7 +1,6 @@
 Capstone 
 Automated Trust Scoring Engine for Zero Trust Access in Hybrid Cloud Environments
 
-
 DOMAIN
 Cybersecurity | Zero Trust Architecture | Cloud Security | DevSecOps
 
