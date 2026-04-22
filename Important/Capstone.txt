@@ -5,6 +5,11 @@ Automated Trust Scoring Engine for Zero Trust Access in Hybrid Cloud Environment
 DOMAIN
 Cybersecurity | Zero Trust Architecture | Cloud Security | DevSecOps
 
+OVERVIEW
+This project implements a Zero Trust-based access control system for hybrid cloud environments.
+It continuously evaluates device security posture and assigns a dynamic trust score (0–100) before granting access to protected resources.
+
+Unlike traditional perimeter-based security, this system enforces “Never Trust, Always Verify” by validating every access request in real time.
 
 TECH STACK
 Frontend: React.js
@@ -36,6 +41,18 @@ This project addresses the need for a dynamic, risk-based access control system 
 - Enforce access decisions based on risk levels
 - Containerize services using Docker
 - Implement CI/CD for automated build and deployment
+
+
+--------------------------------------------------
+Key Features
+--------------------------------------------------
+Real-time device health assessment
+Dynamic trust score calculation (0–100)
+Risk-based access control (Allow / Restrict / Deny)
+Automated security checks using OSQuery and Nmap
+Microservices-based architecture
+Containerized deployment using Docker
+CI/CD pipeline integration
 
 
 --------------------------------------------------
