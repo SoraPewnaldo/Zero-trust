@@ -95,3 +95,13 @@ docker run -d -p 27017:27017 --name mongodb mongo:latest
 - `npm run build` - Build for production
 - `npm start` - Start production server
 - `npm run init-db` - Initialize database with default data
+  
+##  About ZeroIAM Backend
+
+This backend is part of a Zero Trust Identity & Access Management system that evaluates device trust before granting access to protected resources.
+
+It acts as the **Gatekeeper API**, responsible for:
+- Authenticating users
+- Initiating device trust scans
+- Communicating with the Trust Scoring Engine
+- Enforcing access control decisions
