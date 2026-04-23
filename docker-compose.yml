@@ -42,7 +42,7 @@ services:
       - JWT_SECRET=dev_secret_key_change_in_prod
       - JWT_EXPIRES_IN=8h
       - TRUST_ENGINE_URL=http://trust_engine:5000/scan
-      - TRUST_ENGINE_TIMEOUT=8000
+      - TRUST_ENGINE_TIMEOUT=35000
     volumes:
       - ./server:/app
       - /app/node_modules

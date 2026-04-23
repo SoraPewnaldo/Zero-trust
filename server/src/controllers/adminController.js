@@ -20,7 +20,7 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const getDashboardStats = async (req, res) => {
   try {
     const {
-      timeRange = 'today'
+      timeRange = 'all'
     } = req.query;
 
     // Calculate date range
@@ -36,18 +36,14 @@ export const getDashboardStats = async (req, res) => {
       case 'month':
         startDate = new Date(now.setMonth(now.getMonth() - 1));
         break;
+      case 'all':
       default:
-        startDate = new Date(now.setHours(0, 0, 0, 0));
+        startDate = null; // no date filter
     }
 
     // Aggregate scan statistics
-    const stats = await ScanResult.aggregate([{
-      $match: {
-        createdAt: {
-          $gte: startDate
-        }
-      }
-    }, {
+    const matchStage = startDate ? { createdAt: { $gte: startDate } } : {};
+    const stats = await ScanResult.aggregate([{ $match: matchStage }, {
       $group: {
         _id: null,
         totalScans: {
@@ -88,16 +84,8 @@ export const getDashboardStats = async (req, res) => {
     };
 
     // Get unique users and devices
-    const uniqueUsers = await ScanResult.distinct('userId', {
-      createdAt: {
-        $gte: startDate
-      }
-    });
-    const uniqueDevices = await ScanResult.distinct('deviceId', {
-      createdAt: {
-        $gte: startDate
-      }
-    });
+    const uniqueUsers = await ScanResult.distinct('userId', matchStage);
+    const uniqueDevices = await ScanResult.distinct('deviceId', matchStage);
     res.json({
       totalScans: result.totalScans,
       allowedScans: result.allowedScans,
@@ -718,7 +706,7 @@ export const updateUser = async (req, res) => {
     const { department, role, status, clearanceLevel } = req.body;
 
     // Validate allowed values to prevent privilege escalation
-    const allowedRoles = ['employee', 'admin'];
+    const allowedRoles = ['employee', 'resource_manager', 'security_analyst', 'super_admin'];
     const allowedStatuses = ['active', 'suspended', 'inactive'];
 
     if (role && !allowedRoles.includes(role)) {

@@ -144,7 +144,7 @@ const TrustPolicySchema = new Schema({
   appliesTo: {
     roles: {
       type: [String],
-      default: ['employee', 'admin']
+      default: ['employee', 'resource_manager', 'security_analyst', 'super_admin']
     },
     resources: [{
       type: Schema.Types.ObjectId,

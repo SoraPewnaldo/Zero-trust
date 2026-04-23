@@ -445,8 +445,10 @@ export default function AdminDashboard() {
                 <label className="block text-[10px] font-mono text-white/40 mb-1 tracking-wider">ROLE</label>
                 <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="w-full bg-black border border-white/20 text-white font-mono text-xs px-3 py-2 focus:outline-none focus:border-white/50">
                   <option value="">ALL</option>
-                  <option value="employee">EMPLOYEE</option>
-                  <option value="admin">ADMIN</option>
+                   <option value="employee">EMPLOYEE</option>
+                   <option value="resource_manager">RESOURCE MANAGER</option>
+                   <option value="security_analyst">SECURITY ANALYST</option>
+                   <option value="super_admin">SUPER ADMIN</option>
                 </select>
               </div>
               <div>

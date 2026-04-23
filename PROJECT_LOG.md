@@ -205,9 +205,13 @@ docker-compose down -v
 - [x] **\.gitignore Updated**: Added PyInstaller dist/build/exe/spec exclusions.
 - [x] **server/.env.example Updated**: All new config keys documented with generation instructions.
 
-### 🏆 PROJECT STATUS: PRODUCTION READY
-As of 2026-04-16, all code-level production-readiness gaps have been resolved. The system is fully hardened for local
-capstone demonstration. Remaining tasks are AWS deployment (deferred).
+As of 2026-04-17 (Early morning), the system has been further enhanced with real-time per-user metrics and administrative controls.
+
+### Session 5 — 2026-04-17: Final Polish & Audit Fixes
+- [x] **MFA UI Cleanup**: Removed the hardcoded "123456" test hint from the verify modal.
+- [x] **Admin Analytics Fix**: Rewrote `getUsers` backend using MongoDB aggregation to join per-user scan results (total scans, avg score, last scan).
+- [x] **User Management**: Implemented "Suspend / Activate" toggle buttons in the Admin Dashboard linked to the `status` field.
+- [x] **GitHub Sync**: Pushed final hardened state to repository.
 
 ---
 
@@ -228,12 +232,7 @@ capstone demonstration. Remaining tasks are AWS deployment (deferred).
 ### 🟢 Low Priority / Future Features
 - [ ] **Jenkins Jira Integration**: Set up ticket creation on pipeline failure.
 - [ ] **Test Coverage**: Run `npm run test` and document current coverage.
-- [ ] **User suspension UI**: Add route/UI to handle `status: 'suspended'`.
-
-### 🟢 Low Priority / Future Features
-- [ ] **Jenkins Jira Integration**: Set up ticket creation on pipeline failure.
-- [ ] **Test Coverage**: Run `npm run test` and document current coverage.
-- [ ] **User suspension**: Add route/UI to handle `status: 'suspended'`.
+- [x] **User suspension UI**: Added Suspend/Activate toggle in Admin Dashboard.
 
 ### 🚀 Final Stage: Deployment (Last Priority)
 - [ ] **AWS Reprovisioning**: Re-create EC2 key pair and restore SSH access.

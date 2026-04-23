@@ -17,7 +17,7 @@ async function initializeDatabase() {
       username: 'sora',
       email: 'sora@zeroiam.com',
       passwordHash: adminPassword,
-      role: 'admin',
+      role: 'super_admin',
       firstName: 'Sora',
       lastName: 'Administrator',
       department: 'IT Security',
@@ -28,7 +28,7 @@ async function initializeDatabase() {
       username: 'sarah.johnson',
       email: 'sarah.johnson@zeroiam.com',
       passwordHash: await bcrypt.hash('password123', 10),
-      role: 'employee',
+      role: 'security_analyst',
       firstName: 'Sarah',
       lastName: 'Johnson',
       department: 'Engineering',
@@ -38,7 +38,7 @@ async function initializeDatabase() {
       username: 'michael.chen',
       email: 'michael.chen@zeroiam.com',
       passwordHash: await bcrypt.hash('password123', 10),
-      role: 'employee',
+      role: 'resource_manager',
       firstName: 'Michael',
       lastName: 'Chen',
       department: 'Engineering',
@@ -107,7 +107,7 @@ async function initializeDatabase() {
       sensitivityScore: 3,
       requiredTrustScore: 60,
       mfaRequired: false,
-      allowedRoles: ['employee', 'admin'],
+      allowedRoles: ['employee', 'resource_manager', 'security_analyst', 'super_admin'],
       status: 'active',
       metadata: {
         owner: 'IT Department',
@@ -124,7 +124,7 @@ async function initializeDatabase() {
       sensitivityScore: 7,
       requiredTrustScore: 70,
       mfaRequired: false,
-      allowedRoles: ['employee', 'admin'],
+      allowedRoles: ['employee', 'resource_manager', 'security_analyst', 'super_admin'],
       status: 'active',
       metadata: {
         owner: 'Engineering',
@@ -141,7 +141,7 @@ async function initializeDatabase() {
       sensitivityScore: 10,
       requiredTrustScore: 80,
       mfaRequired: true,
-      allowedRoles: ['admin'],
+      allowedRoles: ['super_admin'],
       status: 'active',
       metadata: {
         owner: 'DevOps',
@@ -159,7 +159,7 @@ async function initializeDatabase() {
       sensitivityScore: 8,
       requiredTrustScore: 75,
       mfaRequired: false,
-      allowedRoles: ['admin'],
+      allowedRoles: ['security_analyst', 'super_admin'],
       status: 'active',
       metadata: {
         owner: 'Human Resources',
@@ -176,7 +176,7 @@ async function initializeDatabase() {
       sensitivityScore: 9,
       requiredTrustScore: 80,
       mfaRequired: true,
-      allowedRoles: ['admin'],
+      allowedRoles: ['super_admin'],
       status: 'active',
       metadata: {
         owner: 'IT Security',
@@ -192,7 +192,7 @@ async function initializeDatabase() {
       sensitivityScore: 5,
       requiredTrustScore: 60,
       mfaRequired: false,
-      allowedRoles: ['employee', 'admin'],
+      allowedRoles: ['employee', 'resource_manager', 'security_analyst', 'super_admin'],
       status: 'active',
       metadata: {
         owner: 'HR',
@@ -249,7 +249,7 @@ async function initializeDatabase() {
         requireAfterDays: 30
       },
       appliesTo: {
-        roles: ['employee', 'admin'],
+        roles: ['employee', 'resource_manager', 'security_analyst', 'super_admin'],
         resources: [],
         departments: []
       },

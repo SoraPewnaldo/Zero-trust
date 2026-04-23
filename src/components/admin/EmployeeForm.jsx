@@ -132,7 +132,9 @@ export default function EmployeeForm({
                                 <Shield size={14} className="absolute left-3 top-2.5 text-white/30" />
                                 <select name="role" value={formData.role} onChange={handleChange} className="w-full bg-black/50 border border-white/20 text-white font-mono text-xs px-3 py-2 pl-9 focus:outline-none focus:border-white/50">
                                     <option value="employee">Employee</option>
-                                    <option value="admin">Administrator</option>
+                                    <option value="resource_manager">Resource Manager</option>
+                                    <option value="security_analyst">Security Analyst</option>
+                                    <option value="super_admin">Super Administrator</option>
                                 </select>
                             </div>
                         </div>

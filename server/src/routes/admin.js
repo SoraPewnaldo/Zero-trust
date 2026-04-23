@@ -4,7 +4,7 @@ import { authenticateToken, requireRole } from '../middleware/auth.js';
 const router = express.Router();
 
 // All admin routes require authentication and admin role
-router.use(authenticateToken, requireRole('admin'));
+router.use(authenticateToken, requireRole('super_admin', 'security_analyst', 'resource_manager'));
 router.get('/stats', getDashboardStats);
 router.get('/scans', getScanLogs);
 router.get('/users', getUsers);

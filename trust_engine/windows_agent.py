@@ -61,19 +61,20 @@ def check_antivirus() -> dict:
             products = [products]
         
         for product in products:
-            # productState bit 12 = enabled, bit 4 = up-to-date
-            # Common enabled states: 397568, 397312, 266240
             state = product.get("productState", 0)
             name = product.get("displayName", "Unknown AV")
-            # Check if AV is enabled (bit 12 of productState)
-            if state is not None and (int(state) & 0x1000) != 0:
+            if state is None:
+                continue
+            # productState is a 3-byte hex value: 0xAABBCC
+            # Middle byte (BB) encodes real-time protection status:
+            #   0x10 = enabled/running, 0x00 or 0x01 = disabled/snoozed
+            state_int = int(state)
+            rt_byte = (state_int >> 12) & 0xF
+            if rt_byte == 1:  # 0x10 >> 4 == 1 means real-time protection ON
                 return {"running": True, "name": name}
-        
-        # If we found products but none seem active
-        if products:
-            return {"running": True, "name": products[0].get("displayName", "Unknown AV")}
-        
-        return {"running": False, "name": "None detected"}
+
+        # No active AV found — all products are disabled or snoozed
+        return {"running": False, "name": "Disabled"}
     
     except Exception as e:
         print(f"[WARN] Antivirus check failed: {e}")
