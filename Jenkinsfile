@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS'
+    }
+
     parameters {
         // Toggle: only deploy to prod when this is explicitly checked
         booleanParam(name: 'DEPLOY_TO_PROD', defaultValue: false,
