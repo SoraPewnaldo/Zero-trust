@@ -15,17 +15,17 @@ services:
       - key: PORT
         value: 3001
       - key: MONGODB_URI
-        value: mongodb+srv://Sora:sora@iam.stsln00.mongodb.net/zeroiam?appName=IAM
+        sync: false   # Set this manually in Render Dashboard → Environment
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 8h
       - key: TRUST_ENGINE_URL
-        value: https://zeroiam-trust-engine.onrender.com/scan
+        sync: false   # Set to your trust engine URL after deploy
       - key: TRUST_ENGINE_TIMEOUT
         value: 35000
       - key: CORS_ORIGIN
-        value: https://zero-trust-zeta.vercel.app
+        sync: false   # Set to your Vercel frontend URL after deploy
 
   # -------------------------
   # Trust Engine (Python/Flask)
@@ -40,5 +40,5 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: PORT
-        value: 5000
+      - key: DEMO_MODE
+        value: true
