@@ -1,0 +1,44 @@
+services:
+  # -------------------------
+  # Backend (Node/Express)
+  # -------------------------
+  - type: web
+    name: zeroiam-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGODB_URI
+        value: mongodb+srv://Sora:sora@iam.stsln00.mongodb.net/zeroiam?appName=IAM
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: TRUST_ENGINE_URL
+        value: https://zeroiam-trust-engine.onrender.com/scan
+      - key: TRUST_ENGINE_TIMEOUT
+        value: 35000
+      - key: CORS_ORIGIN
+        value: https://zero-trust-zeta.vercel.app
+
+  # -------------------------
+  # Trust Engine (Python/Flask)
+  # -------------------------
+  - type: web
+    name: zeroiam-trust-engine
+    runtime: python
+    rootDir: trust_engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
