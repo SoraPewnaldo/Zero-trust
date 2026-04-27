@@ -151,3 +151,5 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions including SSL setup.
 ---
 
 **Capstone Team (Maintainers):** Ayush Dakwal, Aakhya Chhauhan, Ritik Arora, Jivaj Arora
+
+<!-- Automated DevOps test trigger -->
