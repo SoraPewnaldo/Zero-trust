@@ -5,11 +5,6 @@ pipeline {
         nodejs 'NodeJS'
     }
 
-    parameters {
-        // Toggle: only deploy to prod when this is explicitly checked
-        booleanParam(name: 'DEPLOY_TO_PROD', defaultValue: false,
-            description: 'Check to deploy to AWS EC2 after a successful build')
-    }
 
     environment {
         // Fallback for BRANCH_NAME if not in a multibranch pipeline
@@ -87,35 +82,6 @@ pipeline {
             }
         }
 
-        stage('Deploy to Production (AWS EC2)') {
-            when {
-                allOf {
-                    branch 'main'
-                    expression { return params.DEPLOY_TO_PROD == true }
-                }
-            }
-            steps {
-                script {
-                    echo "Deploying to AWS EC2..."
-                    withCredentials([
-                        sshUserPrivateKey(credentialsId: 'ec2-ssh-key',
-                                          keyFileVariable: 'SSH_KEY'),
-                        string(credentialsId: 'ec2-prod-host',
-                               variable: 'EC2_HOST')
-                    ]) {
-                        // SSH into EC2, pull latest code, rebuild & restart prod stack
-                        bat """
-                            ssh -i %SSH_KEY% -o StrictHostKeyChecking=no %EC2_USER%@%EC2_HOST% ""\
-                                cd %APP_DIR% && "\
-                                git pull origin main && "\
-                                docker compose -f docker-compose.prod.yml build --no-cache && "\
-                                docker compose -f docker-compose.prod.yml up -d && "\
-                                echo Deployment complete!
-                        """
-                    }
-                }
-            }
-        }
     }
 
     post {
